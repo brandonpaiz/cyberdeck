@@ -86,8 +86,11 @@ run make -C "$REPO" install PREFIX=/usr/local
 
 # -------------------------------------------------------------------- disk
 log "disk $DISK"
+# The deck user usually cannot read the repo (home directories are 0750),
+# so populate the disk as root and hand it over afterwards.
 run install -d -o "$DECK_USER" -g "$DECK_USER" "$DISK"
-as_user "$DECK_USER" make -C "$REPO" disk DISK="$DISK" UXN2=/usr/local/bin/uxn2
+run make -C "$REPO" disk DISK="$DISK" UXN2=/usr/local/bin/uxn2
+run chown -R "$DECK_USER:$DECK_USER" "$DISK"
 
 # -------------------------------------------------------------- python env
 log "python venv $VENV (rns, lxmf, bridge)"
