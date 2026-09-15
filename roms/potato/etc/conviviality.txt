@@ -1,0 +1,515 @@
+Tools for Conviviality - Ivan Illich
+
+	Acknowledgments
+	Introduction
+
+ 1. Two Watersheds
+ 2. Convivial Reconstruction
+ 3. The Multiple Balance
+     1. Biological Degradation
+     2. Radical Monopoly
+     3. Overprogramming
+     4. Polarization
+     5. Obsolescence
+     6. Frustration
+ 4. Recovery
+     1. The Demythologization of Science
+     2. The Rediscovery of Language
+     3. The Recovery of Legal Procedure
+ 5. Political Inversion
+     1. Myths and Majorities
+     2. From Breakdown to Chaos
+     3. Insight into Crisis
+     4. Sudden Change
+
+Acknowledgments
+
+The multidimensional analysis of ceilings for industrial growth was first
+formulated in a Spanish document co-authored by Valentina Borremans and myself
+and submitted as a guideline for a meeting of two dozen Chilean socialists and
+other Latin Americans at CIDOC (the Center for Intercultural Documentation) in
+Cuernavaca, Mexico. The next version was presented at the Zeno Symposium
+organized by Professor Richard Wollheim in Cyprus. It was published in Esprit,
+Paris, March 1972, with criticisms by Th. Adam, Pierre Caussat, J. P.
+Chevenement, Paul Fraisse, Yves Goussault, Pierre Kende, J. W. Lapierre, Michel
+Panoff, Henri Pequignot, Jean Marie Domenach, and Paul Thibaud. A third version
+served me and my deceased friend Greer Taylor as the basis for our
+participation in the Canadian Conference on the Law in January 1972 in Ottawa.
+Comments by David Weisstub, Nils Christie, Allen M. Linden, J. G. Castel, H. w.
+Arthurs, Jose Antonio Viera-Gallo, J. C. Smith, and Bonaventura de Sousa
+Santos, and other critical papers by jurists, will be published in mid-1973 in
+Toronto. During the summer of 1972, participants in my CIDOC seminar
+contributed very helpful papers. I'm especially grateful for the assistance of
+John Bradley, John Brewer, Jose Maria and Veronica Bulnes, Martin Cohen, Irene
+Curbelo de Diaz, Dennis Detzel, Joseph Fitzpatrick, Amnon Goldworth, Conrad
+Johnson, Hartmut von Hentig, John MacKnight, Michael Maccoby, Leslie Marcus,
+Francisco Mir6 Quesada, Marie-Noelle Monteil, William Ophuls, Marta H. Reed,
+Everett Reimer, Francisco Varela, Etienne Verne, Jacques Vidal and German
+Zabala. Dennis Sullivan has patiently and critically assisted me in editing the
+final version. After I had delivered this manuscript to the publisher, I
+received valuable suggestions from J.P. Naik and his friends in India. These
+have seeped into the text to the extent this can happen in the correction of
+proofs. Second only to Valentina Borremans and Greer Taylor, Heinz von
+Foerster, Erich Fromm, Hermann Schwember and Abrahm n Diaz Gonzales have exerted
+the most decisive influence on the formulation of my ideas.
+
+Introduction
+
+During the next several years I intend to work on an epilogue to the industrial
+age. I want to trace the changes in language, myth, ritual, and law which took
+place in the current epoch of packaging and of schooling. I want to describe
+the fading monopoly of the industrial mode of production and the vanishing of
+the industrially generated professions this mode of production serves.
+
+Above all I want to show that two-thirds of mankind still can avoid passing
+through the industrial age, by choosing right now a postindustrial balance in
+their mode of production which the hyperindustrial nations will be forced to
+adopt as an alternative to chaos. To prepare for this task I submit this essay
+for critical comment.
+
+In its present form this book is the result of conversations at CIDOC in
+Cuernavaca during the summer of 1972. Participants in my seminar will recognize
+their ideas, and often their words. I ask my collaborators to accept my sincere
+thanks, especially for their written contributions.
+
+This essay has become too long to appear as an article and too intricate to be
+read in several installments. It is a progress report. I respectfully thank
+Ruth Nanda Anshen for issuing this tract as a volume, in World Perspectives,
+published by Harper & Row.
+
+For several years at CIDOC in Cuernavaca we have conducted critical research on
+the monopoly of the industrial mode of production and have tried to define
+conceptually alternative modes that would fit a postindustrial age. During tine
+late sixties this research centered on educational devices. By 1970 we had
+found that:
+
+ 1. Universal education through compulsory schooling is not possible.
+ 2. Alternative devices for the production and marketing of mass education are
+    technically more feasible and ethically less tolerable than compulsory
+    graded schools. Such new educational arrangements are now on the verge of
+    replacing traditional school systems in rich and in poor countries. They
+    are potentially more effective in the conditioning of job-holders and
+    consumers in an industrial economy. They are therefore more attractive for
+    the management of present societies, more seductive for the people, and
+    insidiously destructive of fundamental values.
+ 3. A society committed to high levels of shared learning and critical personal
+    intercourse must set pedagogical limits on industrial growth.
+
+I have published the results of this research in a previous volume of World
+Perspectives, entitled Deschooling Society. I clarified some of the points left
+ill defined in that book by writing an article published in the Saturday Review
+of April 19, 1971.
+
+Our analysis of schooling has led us to recognize the mass production of
+education as a paradigm for other industrial enterprises, each producing a
+service commodity, each organized as a public utility, and each defining its
+output as a basic necessity. At first our attention was drawn to the compulsory
+insurance of professional health care, and to systems of public transport,
+which tend to become compulsory once traffic rolls above a certain speed. We
+found that the industrialization of any service agency leads to destructive
+side effects analogous to the unwanted secondary results well known from the
+overproduction of goods. we had to face a set of limits to growth in the
+service sector Of any society as inescapable as the limits inherent in the
+industrial production of artifacts. we concluded that a set of limits to
+industrial growth is well formulated only if these limits apply both to goods
+and to services which are produced in an industrial mode. So we set out to
+clarify these limits.
+
+I here submit the concept of a multidimensional balance of human life which can
+serve as a framework for evaluating man's relation to his tools. In each of
+several dimensions of this balance it is possible to identify a natural scale.
+When an enterprise grows beyond a certain point on this scale, it first
+frustrates the end for which it was originally designed, and then rapidly
+becomes a threat to society itself. These scales must be identified and the
+parameters of human endeavors within which human life remains viable must be
+explored.
+
+Society can be destroyed when further growth of mass production renders the
+milieu hostile, when it extinguishes the free use of the natural abilities of
+society's members, when it isolates people from each other and locks them into
+a man-made shell, when it undermines the texture of community by promoting
+extreme social polarization and splintering specialization, or when cancerous
+acceleration enforces social change at a rate that rules out legal, cultural,
+and political precedents as formal guidelines to present behavior. Corporate
+endeavors which thus threaten society cannot be tolerated. At this point it
+becomes irrelevant whether an enterprise is nominally owned by individuals,
+corporations, or the slate, because no form of management can make such
+fundamental destruction serve a social purpose.
+
+Our present ideologies are useful to clarify the contradictions which appear in
+a society which relies on the capitalist control of industrial production; they
+do not, however, provide the necessary framework for analyzing the crisis in
+the industrial mode of production itself. I hope that one day a general theory
+of industrialization will be stated with precision, that it will be formulated
+in terms compelling enough to withstand the test of criticism. Its concepts
+ought to provide a common language for people in opposing parties who need to
+engage in the assessment of social programs or technologies, and who want to
+restrain the power of man's tools when they tend to overwhelm man and his
+goals. Such a theory should help people invert the present structure of major
+institutions. I hope that this essay will enhance the formulation of such a
+theory.
+
+It is now difficult to imagine a modern society in which industrial growth is
+balanced and kept in check by several complementary, distinct, and equally
+scientific modes of production. Our vision of the possible and the feasible is
+so restricted by industrial expectations that any alternative to more mass
+production sounds like a return to past oppression or like a Utopian design for
+noble savages. In fact, however, the vision of new possibilities requires only
+the recognition that scientific discoveries can be useful in at least two
+opposite ways. The first leads to specialization of functions,
+institutionalization of values and centralization of power and turns people
+into the accessories of bureaucracies or machines. The second enlarges the
+range of each person's competence, control, and initiative, limited only by
+other individuals' claims to an equal range of power and freedom.
+
+To formulate a theory about a future society both very modern and not dominated
+by industry, it will be necessary to recognize natural scales and limits. We
+must come to admit that only within limits can machines take the place of
+slaves; beyond these limits they lead to a new kind of serfdom. Only within
+limits can education fit people into a man-made environment: beyond these
+limits lies the universal schoolhouse, hospital ward, or prison. Only within
+limits ought politics to be concerned with the distribution of maximum
+industrial outputs, rather than with equal inputs of either energy or
+information. Once these limits are recognized, it becomes possible to
+articulate the triadic relationship between persons, tools, and a new
+collectivity. Such a society, in which modern technologies serve politically
+interrelated individuals rather than managers, I will call "convivial".
+
+After many doubts, and against the advice of friends whom I respect, I have
+chosen "convivial"  as a technical term to designate a modern society of
+responsibly limited tools. In part this choice was conditioned by the desire to
+continue a discourse which had started with its Spanish cognate. The French
+cognate has been given technical meaning (for the kitchen) by Brillat-Savarin
+in his Physiology of Taste: Meditations on Transcendental Gastronomy. This
+specialized use of the term in French might explain why it has already proven
+effective in the unmistakably different and equally specialized context in
+which it will appear in this essay. I am aware that in English "convivial" now
+seeks the company of tipsy jollyness, which is distinct from that indicated by
+the OED and opposite to the austere meaning of modern eutrapelia, which I
+intend. By applying the term "convivial" to tools rather than to people, I hope
+to forestall confusion.
+
+"Austerity", which says something about people, has also been degraded and has
+acquired a bitter taste, while for Aristotle or Aquinas it marked the
+foundation of friendship. In the Summa Theologica, II, II, in the 186th
+question, article 5, Thomas deals with disciplined and creative playfulness. In
+his third response he defines "austerity" as a virtue which does not exclude
+all enjoyments, but only those which are distracting from or destructive of
+personal relatedness. For Thomas "austerity" is a complementary part of a more
+embracing virtue, which he calls friendship or joyfulness. It is the fruit of
+an apprehension that things or tools could destroy rather than enhance
+eutrapelia (or graceful playfulness) in personal relations. [Hugo v. Rahner,
+Man at Play, New York, 1972.]
+
+Two Watersheds
+
+The year 1913 marks a watershed in the history of modern medicine. Around that
+year a patient began to have more than a fifty-fifty chance that a graduate of
+a medical school would provide him with a specifically effective treatment (if,
+of course, he was suffering from one of the standard diseases recognized by the
+medical science of the time). Many shamans and herb doctors familiar with local
+diseases and remedies and trusted by their clients had always had equal or
+better results.
+
+Since then medicine has gone on to define what constitutes disease and its
+treatment. The Westernized public learned to demand effective medical practice
+as defined by the progress of medical science. For the first time in history
+doctors could measure their efficiency against scales which they themselves had
+devised. This progress was due to a new perspective of the origins of some
+ancient scourges; water could be purified and infant mortality lowered; rat
+control could disarm the plague; treponemas could be made visible under the
+microscope and Salvarsan could eliminate them with statistically defined risks
+of poisoning the patient; syphilis could be avoided, or recognized and cured by
+rather simple procedures; diabetes could be diagnosed and self-treatment with
+insulin could prolong the life of the patient. Paradoxically, the simpler the
+tools became, the more the medical profession insisted on a monopoly of their
+application, the longer became the training demanded before a medicine man was
+initiated into the legitimate use of the simplest tool, and the more the entire
+population felt dependent on the doctor. Hygiene turned from being a virtue
+into a professionally organized ritual at the altar of a science.
+
+Infant mortality was lowered, common forms of infection were prevented or
+treated, some forms of crisis intervention became quite effective. The
+spectacular decline in mortality and morbidity was due to changes in
+sanitation, agriculture, marketing, and general attitudes toward life. But
+though these changes were sometimes influenced by the attention that engineers
+paid to new facts discovered by medical science, they could only occasionally
+be ascribed to the intervention of doctors.
+
+Indirectly, industrialization profited from the new effectiveness attributed to
+medicine; work attendance was raised, and with it the claim to efficiency on
+the job. The destructiveness of new tools was hidden from public view by new
+techniques of providing spectacular treatments for those who fell victims to
+industrial violence such as the speed of cars, tension on the job, and poisons
+in the environment.
+
+The sickening side effects of modern medicine became obvious after World War
+II, but doctors needed time to diagnose drug resistant microbes or genetic
+damage caused by prenatal X-rays as new epidemics. The claim made by George
+Bernard Shaw a generation earlier, that doctors had ceased to be healers and
+were assuming control over the patient's entire life, could still be regarded
+as a caricature. Only in the mid-fifties did it become evident that medicine
+had passed a second watershed and had itself created new kinds of disease.
+
+Foremost among iatrogenic (doctor-induced) diseases was the pretense of doctors
+that they provided their clients with superior health. First, social planners
+and doctors became its victims. Soon this epidemic aberration spread to society
+at large. Then, during the last fifteen years, professional medicine became a
+major threat to health. Huge amounts of money were spent to stem immeasurable
+damage caused by medical treatments. The cost of healing was dwarfed by the
+cost of extending sick life; more people survived longer months with their
+lives hanging on a plastic tube, imprisoned in iron lungs, or hooked onto
+kidney machines. New sickness was defined and institutionalized; the cost of
+enabling people to survive in unhealthy cities and in sickening jobs
+sky-rocketed. The monopoly of the medical profession was extended over an
+increasing range of everyday occurrences in every man's life.
+
+The exclusion of mothers, aunts, and other nonprofessionals from the care of
+their pregnant, abnormal, hurt, sick, or dying relatives and friends resulted
+in new demands for medical services at a much faster rate than the medical
+establishment could deliver. As the value of services rose, it became almost
+impossible for people to care. Simultaneously, more conditions were defined as
+needing treatment by creating new specializations or paraprofessions to keep
+the tools under the control of the guild.
+
+At the time of the second watershed, preservation of the sick life of medically
+dependent people in an unhealthy environment became the principal business of
+the medical profession. Costly prevention and costly treatment became
+increasingly the privilege of those individuals who through previous
+consumption of medical services had established a claim to more of it. Access
+to specialists, prestige hospitals, and life-machines goes preferentially to
+those people who live in large cities, where the cost of basic disease
+prevention, as of water treatment and pollution control, is already
+exceptionally high. The higher the per capita cost of prevention, the higher,
+paradoxically, became the per capita cost of treatment. The prior consumption
+of costly prevention and treatment establishes a claim for even more
+extraordinary care. Like the modern school system, hospital-based health care
+fits the principle that those who have will receive even more and those who
+have not will be taken for the little that they have. In schooling this means
+that high consumers of education will get postdoctoral grants, while dropouts
+learn that they have failed. In medicine the same principle assures that
+suffering will increase with increased medical care; the rich will be given
+more treatment for iatrogenic diseases and the poor will just suffer from them.
+
+After this second turning point, the unwanted hygienic by-products of medicine
+began to affect entire populations rather than just individual men. In rich
+countries medicine began to sustain the middle-aged until they became decrepit
+and needed more doctors and increasingly complex medical tools. In poor
+countries, thanks to modern medicine, a larger percentage of children began to
+survive into adolescence and more women survived more pregnancies. Populations
+increased beyond the capacities of their environments and the restraints and
+efficiencies of their cultures to nurture them. Western doctors abused drugs
+for the treatment of diseases with which native populations had learned to
+live. As a result they bred new strains of disease with which modern treatment,
+natural immunity, and traditional culture could not cope. On a world-wide
+scale, but particularly in the U.S.A., medical care concentrated on breeding a
+human stock that was fit only for domesticated life within an increasingly more
+costly, man-made, scientifically controlled environment. One of the main
+speakers at the 1970 AMA convention exhorted her pediatric colleagues to
+consider each newborn baby as a patient until the child could be certified as
+healthy. Hospital-born, formula-fed, antibiotic-stuffed children thus grow into
+adults who can breathe the air, eat the food, and survive the lifelessness of a
+modern city, who will breed and raise at almost any cost a generation even more
+dependent on medicine.
+
+Bureaucratic medicine spread over the entire world. In 1968, after twenty years
+of Mao's regime, the Medical College of Shanghai had to conclude that it was
+engaged in the training of "so-called first-rate doctors ... who ignore five
+million peasants and serve only minorities in cities. They create large
+expenses for routine laboratory examinations . . . Describe huge amounts of
+antibiotics unnecessarily . . . and in the absence of hospital or laboratory
+facilities have to limit themselves to explaining the mechanisms of the disease
+to people for whom they cannot do anything, and to whom this explanation is
+irrelevant. In China this recognition led to a major institutional inversion.
+Today, the same college reports that one million health workers have reached
+acceptable levels of competence. These health workers are laymen who in periods
+of low agricultural manpower needs have attended short courses, starting with
+the dissection of pigs, gone on to the performance of routine lab tests, the
+study of the elements of bacteriology, pathology, clinical medicine, hygiene,
+and acupuncture, and continued in apprenticeship with doctors or previously
+trained colleagues. These "barefoot doctors" remain at their work places but
+are excused occasionally when fellow workers require their assistance. They
+have responsibility for environmental sanitation, for health education,
+immunization, first aid, primary medical care, post illness follow-up, as well
+as for gynecological assistance, birth control, and abortion education. Ten
+years after the second watershed of Western medicine had been acknowledged,
+China intends to have one fully competent health worker for every hundred
+people. China has proved that a sudden inversion of a major institution is
+possible. It remains to be seen if this deprofessionalization can be sustained
+against the overweening ideology of unlimited progress and pressures from
+classical doctors to incorporate their barefoot homonym as part-time
+professionals on the bottom rung of a medical hierarchy.
+
+In the West during the sixties dissatisfaction with medicine grew in proportion
+to its cost, reaching the greatest intensity in the U.S.A. Rich foreigners
+flocked to the medical centers of Boston, Houston, and Denver to seek exotic
+repair jobs, while the infant mortality of the U.S. poor remained comparable to
+that in some tropical countries of Africa and Asia. Only the very rich in the
+United States can now afford what all people in poor countries have: personal
+attention around the deathbed. An American can now spend in two days of private
+nursing the median yearly cash income of the world's population.
+
+Instead of exposing the systemic disorder, however, only the symptoms of "sick"
+medicine are now publicly indicted in the United States. Spokesmen for the poor
+object to the capitalist prejudices of the AMA and the income of doctors.
+Community leaders object to the lack of community control over the delivery
+systems of professional health maintenance or of sick care, believing that
+laymen on hospital boards can harness professional medics. Black spokesmen
+object to the concentration of research grants on the types of disease which
+tend to strike the white, elderly, overfed foundation official who approves
+them. They ask for research on sickle-cell anemia, which strikes only the
+black. The general voter hopes that the end of the war in Vietnam will make
+more funds available for an increase of medical production. This general
+concern with symptoms, however, distracts attention from the malignant
+expansion of institutional health care which is at the root of the rising costs
+and demands and the decline in wellbeing.
+
+The crisis of medicine lies on a much deeper level than its symptoms reveal and
+is consistent with the present crisis of all industrial institutions. It
+results from the development of a professional complex supported and exhorted
+by society to provide increasingly "better" health, and from the willingness of
+clients to serve as guinea pigs in this vain experiment. People have lost the
+right to declare themselves sick; society now accepts their claims to sickness
+only after certification by medical bureaucrats.
+
+It is not strictly necessary to this argument to accept 1913 and 1955 as the
+two watershed years in order to understand that early in the century medical
+practice emerged into an era of scientific verification of its results. And
+later medical science itself became an alibi for the obvious damage caused by
+the medical professional. At the first watershed the desirable effects of new
+scientific discoveries were easily measured and verified. Germ-free water
+reduced infant mortality related to diarrhea, aspirin reduced the pain of
+rheumatism, and malaria could be controlled by quinine. Some traditional cures
+were recognized as quackery, but, more importantly, the use of some simple
+habits and tools spread widely. People began to understand the relationship
+between health and a balanced diet, fresh air, calisthenics, pore water and
+soap. New devices ranging from toothbrushes to Band-Aids and condoms became
+widely available. The positive contribution of modern medicine to individual
+health during the early part of the twentieth century can hardly be questioned.
+
+But then medicine began to approach the second watershed. Every year medical
+science reported a new breakthrough. Practitioners of new specialties
+rehabilitated some individuals suffering from rare diseases. The practice of
+medicine became centered on the performance of hospital-based staffs. Trust in
+miracle cures obliterated good sense and traditional wisdom on healing and
+health care. The irresponsible use of drugs spread from doctors to the general
+public. The second watershed was approached when the marginal utility of
+further professionalization declined, at least insofar as it can be expressed
+in terms of the physical well-being of the largest number of people. The second
+watershed was superseded when the marginal disutility increased as further
+monopoly by the medical establishment became an indicator of more suffering for
+larger numbers of people. After the passage of this second watershed, medicine
+still claimed continued progress, as measured by the new landmarks doctors set
+for them-selves and then reached: both predictable discoveries and costs. For
+instance, a few patients survived longer with transplants of various organs. On
+the other hand, the total social cost exacted by medicine ceased to be
+measurable in conventional terms. Society can have no quantitative standards by
+which to add up the negative value of illusion, social control, prolonged
+suffering, loneliness, genetic deterioration, and frustration produced by
+medical treatment.
+
+Other industrial institutions have passed through the same two watersheds. This
+is certainly true for the major social agencies that have been reorganized
+according to scientific criteria during the last 150 years. Education, the
+mails, social work, transportation, and even civil engineering have followed
+this evolution. At first, new knowledge is applied to the solution of a clearly
+stated problem and scientific measuring sticks are applied to account for the
+new efficiency. But at a second point, the progress demonstrated in a previous
+achievement is used as a rationale for the exploitation of society as a whole
+in the service of a value which is determined and constantly revised by an
+element of society, by one of its self-certifying professional Ã©lites.
+
+In the case of transportation it has taken almost a century to pass from an era
+served by motorized vehicles to the era in which society has been reduced to
+virtual enslavement to the car. During the American Civil War steam power on
+wheels became effective. The new economy in transportation enabled many people
+to travel by rail at the speed of a royal coach, and to do so with a comfort
+kings had not dared dream of. Gradually, desirable locomotion was associated
+and finally identified with high vehicular speeds. But when transportation had
+passed through its second watershed, vehicles had created more distances than
+they helped to bridge; more time was used by the entire society for the sake of
+traffic than was "saved."
+
+It is sufficient to recognize the existence of these two watersheds in order to
+gain a fresh perspective on our present social crisis. In one decade several
+major institutions have moved jointly over their second watershed. Schools are
+losing their claim to be effective tools to provide education; cars have ceased
+to be effective tools for mass transportation; the assembly line has ceased to
+be an acceptable mode of production.
+
+The characteristic reaction of the sixties to the growing frustration was
+further technological and bureaucratic escalation. Self-defeating escalation of
+power became the core-ritual practiced in highly industrialized nations. In
+this context the Vietnam war is both revealing and concealing. It makes this
+ritual visible for the entire world in a narrow theatre of war, yet it also
+distracts attention from the same ritual being played out in many so-called
+peaceful arenas. The conduct of the war proves that a convivial army limited to
+bicycle speeds is served by the opponent'ss escalation of anonymous power. And
+yet many Americans argue that the resources squandered on the war in the Far
+East could be used effectively to overwhelm poverty at home. Others are anxious
+to use the $20 billion the war now costs for increasing international
+development assistance from its present low of $2 billion. They fail to grasp
+the underlying institutional structure common to a peaceful war on poverty and
+a bloody war on dissidence. Both escalate what they are meant to eliminate.
+
+While evidence shows that more of the same leads to utter defeat, nothing less
+than more and more seems worthwhile in a society infected by the growth mania.
+The desperate plea is not only for more bombs and more police, more medical
+examinations and more teachers, but also for more information and research. The
+editor-in-chief of the Bulletin of Atomic Scientists claims that most of our
+present problems are the result of recently acquired knowledge badly applied,
+and concludes that the only remedy for the mess created by this information is
+more of it. It has become fashionable to say that where science and technology
+have created problems, it is only more scientific understanding and better
+technology that can carry us past them.
+
+The cure for bad management is more management. The cure for specialized
+research is more costly interdisciplinary research, just as the cure for
+polluted rivers is more costly nonpolluting detergents. The pooling of stores
+of information, the building up of a knowledge stock, the attempt to overwhelm
+present problems by the introduction of more science is the ultimate attempt to
+solve a crisis by escalation.
+
+Convivial Reconstruction
+
+The symptoms of accelerated crisis are widely recognized. Multiple attempts
+have been made to explain them. I believe that this crisis is rooted in a major
+twofold experiment which has failed, and I claim that the resolution of the
+crisis begins with a recognition of the failure. For a hundred years we have
+tried to make machines work for men and to school men for life in their
+service. Now it turns out that machines do not "work" and that people cannot be
+schooled for a life at the service of machines. The hypothesis on which the
+experiment was built must now be discarded. The hypothesis was that machines
+can replace slaves. The evidence shows that, used for this purpose, machines
+enslave men. Neither a dictatorial proletariat nor a leisure mass can escape
+the dominion of constantly expanding industrial tools.
+
+The crisis can be solved only if we learn to invert the present deep structure
+of tools; if we give people tools that guarantee their right to work with high,
+independent efficiency, thus simultaneously eliminating the need for either
+slaves or masters and enhancing each person's range of freedom. People need new
+tools to work with rather than tools that "work" for them. They need technology
+to make the most of the energy and imagination each has, rather than more
+well-programmed energy slaves.
+
+I believe that society must be reconstructed to enlarge the contribution of
+autonomous individuals and primary groups to the total effectiveness of a new
+system of production designed to satisfy the human needs which it also
+determines. In fact, the institutions of industrial society do just the
+opposite. As the power of machines increases, the role of persons more and more
+decreases to that of mere consumers.
+
+Individuals need tools to move and to dwell. They need remedies for their
+diseases and means to communicate with one another. People cannot make all
+these things for themselves. They depend on being supplied with objects and
+services which vary from culture to culture. Some people depend on the supply
+of food and others on the supply of ball bearings.
+
+People need not only to obtain things, they need above all the freedom to make
+things among which they can live, to give shape to them according to their own
+tastes, and to put them to use in caring for and about others. Prisoners in
+rich countries often have access to more things and services than members of
+their families, but they have no say in how things are to be made and cannot
+decide what to do with them. Their punishment consists in being deprived of
+what I shall call "conviviality". They are degraded to the status of mere
+consumers.

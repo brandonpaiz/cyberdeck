@@ -1,0 +1,12 @@
+.DS*
+*jpg
+*png
+*bmp
+/bin
+
+.paper
+.snarf
+.theme
+
+newfile.txt
+

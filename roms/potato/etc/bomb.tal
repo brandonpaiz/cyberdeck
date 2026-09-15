@@ -1,0 +1,78 @@
+|00 @System &vector $2 &pad $6 &r $2 &g $2 &b $2
+|10 @Console &vector $2 &read $1 &pad $5 &write $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+
+|0100 ( -> )
+
+	( theme )
+	#750f .System/r DEO2
+	#db0f .System/g DEO2
+	#ca0f .System/b DEO2
+	( fill )
+	#01 .Screen/auto DEO
+	;pattern-icn .Screen/addr DEO2
+	#0000 .Screen/y DEO2
+	.Screen/height DEI2 #03 SFT2 NIP #00
+	&h
+		#0000 .Screen/x DEO2
+		.Screen/width DEI2 #03 SFT2 NIP #00
+		&w
+			#01 .Screen/sprite DEO
+			INC GTHk ?&w
+		POP2
+		.Screen/y DEI2k #0008 ADD2 ROT DEO2
+		INC GTHk ?&h
+	POP2
+	( icon )
+	.Screen/width DEI2 #01 SFT2 #000c SUB2 .Screen/x DEO2
+	.Screen/height DEI2 #01 SFT2 #000c SUB2 .Screen/y DEO2
+	;uxn-chr .Screen/addr DEO2
+	#26 .Screen/auto DEO
+	#85 .Screen/sprite DEOk
+	.Screen/x DEI2 ;on-frame/x STA2
+	.Screen/y DEI2 ;on-frame/y STA2
+	DEOk DEO
+	;on-frame .Screen/vector DEO2
+
+BRK
+
+@on-frame ( -> )
+
+	[ LIT &f $1 ]
+	DUP #07 AND #00 NEQ ?&no-update
+		[ LIT2 &x $2 ] .Screen/x DEO2
+		[ LIT2 &y $2 ] .Screen/y DEO2
+		#00 ,&f LDR #04 SFT #07 AND DUP ADD
+			;frames ADD2 LDA2 .Screen/addr DEO2
+		#85 .Screen/sprite DEO
+		&no-update
+	INC ,&f STR
+
+BRK
+
+@frames
+	=uxn-chr/f1 =uxn-chr/f2 =uxn-chr/f1 =uxn-chr/f3
+	=uxn-chr/f1 =uxn-chr/f4 =uxn-chr/f4 =uxn-chr/f4
+	
+(
+@|assets )
+@pattern-icn
+1038 7cfe 7c38 1000
+@uxn-chr
+0000 040c 0c0c 0400 0004 0e1e 1e1e 0f07 0000 0000 4060 6f9f 0000 0040 e0ff ffff 
+0000 0004 2666 668c 0000 0c2e 7fff fffe 
+&f1 
+0103 0303 0303 2363 0307 0707 0737 77f7 ffff ffff afd0 ffff ffff efff ffff ffff 
+f0f8 f8f8 58b8 f8f8 fcfc 7cfc fcfc fcfc
+2363 2b0f 0e07 0000 77ff 7f3f 1f0f 0701 ffff ffff 5796 9100 ffff ffff ffff ff91 
+f0f0 e0c0 8000 0000 f8f8 f0e0 c080 8000
+&f2
+0103 0303 0303 2363 0307 0707 0737 77f7 ffff ffff d7e8 ffff ffff f7ff ffff ffff 
+f0f8 f8f8 a858 f8f8 fcfc bcfc fcfc fcfc
+&f3
+0103 0303 0303 2363 0307 0707 0737 77f7 ffff ffff 5ea1 ffff ffff deff ffff ffff 
+f0f8 f8f8 b878 f8f8 fcfc fcfc fcfc fcfc
+&f4
+0103 0303 0303 2363 0307 0707 0737 77f7 ffff ffff dfa0 dfff ffff efff ffff ffff 
+f0f8 f8f8 b858 b8f8 fcfc 7cfc fcfc fcfc
+

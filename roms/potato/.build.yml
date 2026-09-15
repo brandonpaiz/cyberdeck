@@ -1,0 +1,22 @@
+image: debian/stable
+oauth: pages.sr.ht/PAGES:RW
+environment:
+    SITE: rabbits.srht.site/potato
+sources:
+    - https://git.sr.ht/~rabbits/uxnmin
+    - https://git.sr.ht/~rabbits/potato
+tasks:
+    - prepare: |
+        cc uxnmin/src/uxnmin.c -o uxn.bin
+        cat uxnmin/etc/utils/drifloon.rom.txt | ./uxn.bin uxnmin/etc/utils/xh.rom > asm.rom
+        cat potato/src/potato.tal potato/src/desktop.tal potato/src/apps.tal potato/src/manifest.tal potato/src/assets.tal > src.tal
+    - assemble: |
+        cat src.tal | ./uxn.bin asm.rom > potato.rom
+    - upload: |
+        tar -czf out.tar.gz potato.rom
+        acurl() {
+            set +x
+            curl -H "Authorization: Bearer ${OAUTH2_TOKEN}" "${@}"
+            set -x
+        }
+        acurl -fsS "https://pages.sr.ht/publish/${SITE}" -Fcontent=@out.tar.gz
