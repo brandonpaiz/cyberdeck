@@ -331,7 +331,7 @@ ROM → bridge:
 
 | Type | Name | Payload | Effect |
 |---|---|---|---|
-| `01` | `HELLO` | | Bridge replies `STATE` then `IDENTITY` |
+| `01` | `HELLO` | | Bridge replies `STATE` then `IDENTITY` (a `STATE` also arrives on connect, before any `HELLO`) |
 | `02` | `SEND` | `ref* dest[16] len* text` | Queue an LXMF message; `ref` is chosen by the ROM and echoed in `DELIVERY` |
 | `03` | `ANNOUNCE` | | Announce our delivery destination now |
 | `04` | `PEERS` | | Bridge replies one `PEER` per known peer, then `PEERS_END` |
@@ -343,7 +343,7 @@ Bridge → ROM:
 
 | Type | Name | Payload | When |
 |---|---|---|---|
-| `81` | `STATE` | `flags` | On connect, on any change. Bit 0 Reticulum up, bit 1 RNode online, bit 2 propagation node configured |
+| `81` | `STATE` | `flags` | Sent when a client connects, in reply to `HELLO`, and whenever the flags change. Bit 0 Reticulum up, bit 1 RNode online, bit 2 propagation node configured |
 | `82` | `MESSAGE` | `src[16] hh mm len* text` | A message arrived. Local hour and minute are pre-split so the ROM needs no time math; full timestamps are in the history file |
 | `83` | `DELIVERY` | `ref* state` | `01` sending, `02` sent, `03` delivered, `04` failed |
 | `84` | `PEER` | `hash[16] flags len name` | An announce was heard, or in reply to `PEERS`. Flag bit 0: a path is known |
@@ -353,7 +353,9 @@ Bridge → ROM:
 
 Done when: `etc/tests/reticulum.tal` run headlessly against a stub bridge
 script exchanges `HELLO`/`STATE` and a `SEND`/`DELIVERY` round trip, and
-the test is part of `make test` on x86.
+the test is part of `make test` on x86. **Done**: `bridge/tests/test_device.py`
+runs the ROM against `cyberdeck_bridge.stub` under SDL's dummy video
+driver, which also exercises the software-renderer fallback.
 
 ## 6. The bridge
 
@@ -390,8 +392,17 @@ Propagation nodes (store-and-forward for offline peers) are supported by
 LXMF and are a later config option, not part of the first cut.
 
 Done when: two bridges on one machine, each with its own state directory
-and socket, deliver a message from one to the other over a shared
-Reticulum instance, and the receiving side's `lxmf/<hash>.txt` has the line.
+and socket, deliver a message from one to the other, and the receiving
+side's `lxmf/<hash>.txt` has the line. **Done**:
+`bridge/tests/test_lxmf_roundtrip.py` starts two bridge processes with
+separate Reticulum instances joined by a localhost TCP interface (RNS does
+not loop packets back inside one instance, so one process cannot host both
+ends) and drives them over their sockets like uxn2 would.
+
+Two facts learned from the real library: `RNS.Reticulum()` must be created
+on the main thread because it installs signal handlers, and announce
+handlers are called with keyword arguments including
+`announce_packet_hash`, so the handler signature must name them.
 
 ## 7. Reticulum configuration
 
@@ -520,7 +531,8 @@ Each stage is one branch and one review.
    systemd units, uxn2 renderer fallback. Done in the repo; needs the
    on-hardware check: boots into Potato, auto-assemble works.
 2. **Device and bridge, headless.** `reticulum.c`, protocol, bridge with
-   stub tests, `etc/tests/reticulum.tal`. Verify with `make test` on x86.
+   stub tests, `etc/tests/reticulum.tal`. Done; `make test` covers the
+   device, the protocol and a two-process LXMF roundtrip.
 3. **Chat ROM and dev harness.** `chat.tal`, `run-dev.sh`, two decks on a
    laptop. Verify against Sideband over WiFi.
 4. **RNode on the deck.** Config rendering, port detection, end-to-end over

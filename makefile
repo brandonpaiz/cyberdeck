@@ -29,8 +29,10 @@ roms: $(ROMS)
 $(UXN2): uxn2/src/uxn2.c $(wildcard uxn2/src/*.c)
 	$(MAKE) -C uxn2 bin/uxn2
 
+# Drifblim is bootstrapped from its hex dump through xh.rom, which reads stdin
+# and therefore needs the SDL event loop; the dummy drivers keep it headless.
 $(ASM): $(UXN2) uxn2/etc/utils/drifblim.rom.txt uxn2/etc/utils/xh.rom
-	$(MAKE) -C uxn2 bin/drifblim.rom
+	cd uxn2 && SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy sh -c 'cat etc/utils/drifblim.rom.txt | bin/uxn2 etc/utils/xh.rom > bin/drifblim.rom'
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -65,9 +67,26 @@ disk: roms
 	[ -e $(DISK)/src/hello.tal ] || install -m 644 roms/deck/hello.tal $(DISK)/src/hello.tal
 	$(MAKE) -C $(DISK)/src UXN2=$(ABS_UXN2) ASM=../drifblim.rom
 
-test: $(ASM)
-	$(MAKE) -C uxn2 tests
-	@echo "toolchain ok"
+# Tests: uxn2's own suite, the Reticulum device against the stub bridge, the
+# bridge's protocol tests, and (when rns/lxmf are importable) an LXMF
+# roundtrip between two nodes. Use PY=.venv/bin/python after `make venv`.
+PY ?= python3
+PY_ABS := $(if $(findstring /,$(PY)),$(abspath $(PY)),$(PY))
+
+uxn2/bin/reticulum.rom: $(ASM) uxn2/etc/tests/reticulum.tal
+	$(UXN2) $(ASM) uxn2/etc/tests/reticulum.tal $@
+
+test: $(ASM) uxn2/bin/reticulum.rom
+	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(MAKE) -C uxn2 tests
+	cd bridge && $(PY_ABS) -m unittest discover -s tests -t . -v
+
+# Laptop-side virtualenv with the bridge installed editable.
+venv: .venv/bin/cyberdeck-bridge
+
+.venv/bin/cyberdeck-bridge: bridge/pyproject.toml
+	python3 -m venv .venv
+	.venv/bin/pip install -q --upgrade pip
+	.venv/bin/pip install -q -e bridge
 
 install: $(UXN2)
 	install -d $(PREFIX)/bin
@@ -76,4 +95,4 @@ install: $(UXN2)
 clean:
 	rm -rf $(BUILD) uxn2/bin roms/potato/bin
 
-.PHONY: all roms disk test install clean
+.PHONY: all roms disk test venv install clean

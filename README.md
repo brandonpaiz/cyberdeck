@@ -18,6 +18,13 @@ make disk DISK=~/deck   # a Varvara disk directory to run Potato from
 cd ~/deck && ~/cyberdeck/uxn2/bin/uxn2 potato.rom
 ```
 
+## Test
+
+```sh
+make venv                       # .venv with rns, lxmf and the bridge
+make test PY=.venv/bin/python   # uxn2 suite, device test, protocol, LXMF roundtrip
+```
+
 ## Provision the Pi
 
 On a fresh Armbian install, as a user with sudo:
@@ -37,7 +44,10 @@ SSH keeps working. Rerun `setup.sh` after every `git pull`.
 ## Layout
 
 - `uxn2/` — vendored [uxn2](https://git.sr.ht/~rabbits/uxn2) emulator with
-  small patches (software renderer fallback; Reticulum device to come).
+  two patches: a software renderer fallback and the Reticulum device
+  (`src/reticulum.c`, spec in `doc/reticulum-device.md`).
+- `bridge/` — `cyberdeck-bridge`, the Python LXMF daemon behind the device,
+  plus a Reticulum-free stub for testing ROMs.
 - `roms/potato/`, `roms/noodle.tal` — 100r sources. Add Left, Nasu, Orca,
   Dexe, Bifurcan sources here as you get them; each is one line in the
   makefile.

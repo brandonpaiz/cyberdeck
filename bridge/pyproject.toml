@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cyberdeck-bridge"
+version = "0.1.0"
+description = "LXMF bridge behind the cyberdeck's Varvara Reticulum device"
+requires-python = ">=3.11"
+dependencies = ["rns>=1.0", "lxmf>=1.0"]
+
+[project.scripts]
+cyberdeck-bridge = "cyberdeck_bridge.__main__:main"
+cyberdeck-stub-bridge = "cyberdeck_bridge.stub:main"
+
+[tool.setuptools.packages.find]
+include = ["cyberdeck_bridge*"]

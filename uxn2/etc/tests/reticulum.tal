@@ -1,0 +1,93 @@
+( reticulum.tal
+  Exercises the cyberdeck Reticulum device against the stub bridge:
+  connect -> STATE; HELLO -> STATE, IDENTITY; SEND -> DELIVERY x2, MESSAGE.
+  Prints one line per frame and exits 0 on success, 1 on the first
+  unexpected frame or if the bridge never connects. )
+
+|00 @System &vector $2 &expansion $2 &wst $1 &rst $1 &metadata $2 &r $2 &g $2 &b $2 &debug $1 &state $1
+|10 @Console &vector $2 &read $1 &pad $5 &write $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|d0 @Reticulum &vector $2 &status $1 &queue $1 &count $2 &length $2 &addr $2 &read $1 &write $1
+
+|0000
+
+	@step $1
+	@frames $1
+
+|0100
+
+@on-reset ( -> )
+	;on-frame .Reticulum/vector DEO2
+	;on-tick .Screen/vector DEO2
+	BRK
+
+( poll until the socket is up, then send HELLO; give up after ~5s )
+@on-tick ( -> )
+	[ LIT2 &t $2 ] INC2k ,&t STR2
+	#012c GTH2 ?fail-timeout
+	.Reticulum/status DEI #01 AND ?{ BRK }
+	#0000 .Screen/vector DEO2
+	;cmd-hello #0001 send
+	BRK
+
+@on-frame ( -> )
+	&again ( -- )
+	;buf .Reticulum/addr DEO2
+	#0400 .Reticulum/length DEO2
+	#01 .Reticulum/read DEO
+	.Reticulum/count DEI2 ORAk ?{ POP2 BRK }
+	POP2 ;buf LDA handle
+	.Reticulum/queue DEI ?&again
+	BRK
+
+@handle ( type -- )
+	;txt-got print-str DUP print-hex #0a .Console/write DEO
+	#00 .step LDZ ;expect ADD2 LDA STH
+	( bump frame counter ) .frames LDZk INC SWP STZ
+	STHr EQU ?{ !fail-unexpected }
+	.step LDZk INC SWP STZ
+	.step LDZ
+	DUP #03 EQU ?{ DUP #06 EQU ?{ POP JMP2r } POP !done }
+	POP ;cmd-send ;cmd-send/end ;cmd-send SUB2 send
+	JMP2r
+
+@send ( payload* len* -- )
+	.Reticulum/length DEO2
+	.Reticulum/addr DEO2
+	#01 .Reticulum/write DEO
+	.Reticulum/count DEI2 ORA ?{ ;txt-sendfail print-str #81 .System/state DEO }
+	JMP2r
+
+@done ( -- )
+	;txt-ok print-str
+	#80 .System/state DEO
+	JMP2r
+
+@fail-timeout ( -> )
+	;txt-timeout print-str #81 .System/state DEO BRK
+
+@fail-unexpected ( -- )
+	;txt-bad print-str #81 .System/state DEO JMP2r
+
+@print-str ( str* -- )
+	&w LDAk .Console/write DEO INC2 LDAk ?&w
+	POP2 JMP2r
+
+@print-hex ( byte -- )
+	DUP #04 SFT ,&c JSR
+	&c #0f AND #30 ADD DUP #39 GTH #27 MUL ADD .Console/write DEO
+	JMP2r
+
+( expected frame types, in order: STATE STATE IDENTITY DELIVERY DELIVERY MESSAGE )
+@expect 81 81 86 83 83 82
+
+@cmd-hello 01
+@cmd-send 02 00 2a  10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f  00 02 "hi &end
+
+@txt-got "frame 20 00
+@txt-ok "ok 0a 00
+@txt-bad "unexpected 20 "frame 0a 00
+@txt-timeout "timeout 20 "waiting 20 "for 20 "bridge 0a 00
+@txt-sendfail "send 20 "failed 0a 00
+
+@buf $400

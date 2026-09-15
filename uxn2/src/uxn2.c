@@ -30,7 +30,8 @@ typedef Uint8 (*dei_handler)(void);
 
 static Uint8 *ram, dev[0x100], ptr[2], stk[2][0x100];
 static unsigned int uxn_eval(Uint16 pc);
-static int console_vector, screen_vector, controller_vector, mouse_vector;
+static int console_vector, screen_vector, controller_vector, mouse_vector, ret_vector;
+static void ret_flush(void);
 static int rX, rY, rA, rMX, rMY, rMA, rML, rDX, rDY, rL1, rL2;
 
 /* clang-format off */
@@ -95,7 +96,8 @@ system_reboot(const unsigned int soft)
 	else
 		memset(ram, 0, 0x10000);
 	ptr[0] = ptr[1] = 0;
-	console_vector = screen_vector = controller_vector = mouse_vector = 0;
+	console_vector = screen_vector = controller_vector = mouse_vector = ret_vector = 0;
+	ret_flush();
 	rX = rY = rA = rMX = rMY = rMA = rML = rDX = rDY = rL1 = rL2 = 0;
 	return system_load(system_boot_path);
 }
@@ -931,6 +933,8 @@ static Uint8 datetime_dei_dst(void) { datetime_update(); return datetime_t->tm_i
 
 /* clang-format on */
 
+#include "reticulum.c"
+
 /*
 @|Core -------------------------------------------------------------- */
 
@@ -960,7 +964,9 @@ static const dei_handler dei_handlers[256] = {
 	[0xc6] = datetime_dei_sec,
 	[0xc7] = datetime_dei_wday,
 	[0xc8] = datetime_dei_yday,
-	[0xca] = datetime_dei_dst};
+	[0xca] = datetime_dei_dst,
+	[0xd2] = ret_dei_status,
+	[0xd3] = ret_dei_queue};
 
 static const deo_handler deo_handlers[256] = {
 	[0x03] = system_deo_expansion,
@@ -999,7 +1005,10 @@ static const deo_handler deo_handlers[256] = {
 	[0xb9] = fileb_deo_name,
 	[0xbb] = fileb_deo_length,
 	[0xbd] = fileb_deo_read,
-	[0xbf] = fileb_deo_write};
+	[0xbf] = fileb_deo_write,
+	[0xd1] = ret_deo_vector,
+	[0xda] = ret_deo_read,
+	[0xdb] = ret_deo_write};
 
 static inline Uint8
 emu_dei(const Uint8 port)
@@ -1232,6 +1241,9 @@ emu_event(void)
 		/* Console */
 		else if(event.type == stdin_event)
 			console_input(event.cbutton.button, event.cbutton.state);
+		/* Reticulum */
+		else if(event.type == ret_event)
+			ret_on_event(&event);
 		/* Mouse */
 		else if(event.type == SDL_MOUSEMOTION)
 			mouse_pos(event.motion.x, event.motion.y);
@@ -1333,6 +1345,7 @@ emu_init(void)
 		fprintf(stderr, "sdl_joystick: %s\n", SDL_GetError());
 	stdin_event = SDL_RegisterEvents(1);
 	SDL_DetachThread(stdin_thread = SDL_CreateThread(stdin_handler, "stdin", NULL));
+	ret_init();
 	SDL_StartTextInput();
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
