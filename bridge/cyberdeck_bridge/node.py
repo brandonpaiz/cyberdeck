@@ -24,6 +24,9 @@ log = logging.getLogger("bridge.node")
 
 class _AnnounceHandler:
     aspect_filter = "lxmf.delivery"
+    # path responses are announces too (and carry the display name), but
+    # RNS only hands them to handlers that ask for them
+    receive_path_responses = True
 
     def __init__(self, cb: Callable[[bytes, object, bytes | None], None]) -> None:
         self._cb = cb
@@ -191,6 +194,10 @@ class Node:
             self._save_peers()
         else:
             self.peers[src]["seen"] = time.time()
+        if not self.peers[src].get("name"):
+            # We missed this peer's announce. A path response is an announce
+            # too and carries the display name, so ask for one.
+            RNS.Transport.request_path(src)
         log.info("message from %s (%d bytes)", self.peer_name(src), len(text))
         self.history.append(src, self.peer_name(src), text, ts)
         self.on_event(p.message(src, lt.tm_hour, lt.tm_min, text))

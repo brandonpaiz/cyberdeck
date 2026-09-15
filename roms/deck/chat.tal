@@ -1,0 +1,449 @@
+( chat.tal
+  LXMF chat over the cyberdeck Reticulum device (page d0).
+
+  Layout, in 8x8 tiles on the 64x40 screen:
+    row 0        title: name, address, bridge/reticulum/rnode flags
+    rows 2-36    peers on the left (16 wide), conversation on the right (47 wide)
+    row 38       compose line
+    row 39       status line (delivery state, bridge log)
+
+  Keys: Up/Down select peer, Enter send, Backspace edit, Tab announce,
+        Ctrl+P refresh peers, Esc or Ctrl+Q back to Potato.
+
+  History is not kept in the ROM: the bridge appends every message to
+  lxmf/<hash>.txt on the disk, and this ROM re-reads that file whenever
+  the selected conversation changes. See doc/reticulum-device.md. )
+
+|00 @System &vector $2 &expansion $2 &wst $1 &rst $1 &metadata $2 &r $2 &g $2 &b $2 &debug $1 &state $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|80 @Controller &vector $2 &button $1 &key $1
+|a0 @File &vector $2 &success $2 &stat $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2
+|d0 @Reticulum &vector $2 &status $1 &queue $1 &count $2 &length $2 &addr $2 &read $1 &write $1
+
+|0000
+
+	@peer-count $1
+	@peer-sel $1 ( ff = none )
+	@hello-sent $1
+	@connected $1
+	@state-flags $1
+	@compose-len $1
+	@chunks $1
+	@ref $2
+	@self-hash $10
+	@self-name $20
+
+|0100
+
+@on-reset ( -> )
+	( theme ) #0f57 .System/r DEO2 #1ff7 .System/g DEO2 #2f88 .System/b DEO2
+	#ff .peer-sel STZ
+	#0001 .ref STZ2
+	;on-key .Controller/vector DEO2
+	;on-frame .Reticulum/vector DEO2
+	;on-tick .Screen/vector DEO2
+	<redraw-all>
+	BRK
+
+( each frame: track the socket, say HELLO once per connection )
+
+@on-tick ( -> )
+	.Reticulum/status DEI #01 AND
+	DUP .connected LDZ EQU ?{ DUP .connected STZ <draw-title> }
+	?{ #00 .hello-sent STZ BRK }
+	.hello-sent LDZ ?{
+		#01 .hello-sent STZ
+		;cmd-hello #0001 send
+		;cmd-peers #0001 send
+		;txt-connected <set-status> }
+	BRK
+
+(
+@|frames from the bridge )
+
+@on-frame ( -> )
+	&again
+	;frame .Reticulum/addr DEO2
+	#0400 .Reticulum/length DEO2
+	#01 .Reticulum/read DEO
+	.Reticulum/count DEI2 ORAk ?{ POP2 BRK }
+	POP2 handle-frame
+	.Reticulum/queue DEI ?&again
+	BRK
+
+@handle-frame ( -- )
+	;frame LDA
+	DUP #81 EQU ?&state
+	DUP #82 EQU ?&message
+	DUP #83 EQU ?&delivery
+	DUP #84 EQU ?&peer
+	DUP #85 EQU ?&peers-end
+	DUP #86 EQU ?&identity
+	DUP #87 EQU ?&log
+	POP JMP2r
+	&state ( type -- )
+		POP ;frame INC2 LDA .state-flags STZ
+		!<draw-title>
+	&message ( type -- )
+		POP ;frame INC2 ;empty upsert-peer
+		DUP #ff EQU ?{
+			DUP .peer-sel LDZ EQU ?{
+				( unread ) DUP peer-addr #0010 ADD2 LDAk #80 ORA ROT ROT STA
+				POP ;txt-newmsg <set-status> !<draw-peers> }
+			POP load-conversation <draw-conversation>
+			;txt-newmsg !<set-status> }
+		POP JMP2r
+	&delivery ( type -- )
+		POP ;frame #0003 ADD2 LDA
+		DUP #01 NEQ ?{ POP ;txt-sending !<set-status> }
+		load-conversation <draw-conversation>
+		DUP #02 EQU ?{
+			DUP #03 EQU ?{ POP ;txt-failed !<set-status> }
+			POP ;txt-delivered !<set-status> }
+		POP ;txt-sent !<set-status>
+	&peer ( type -- )
+		POP
+		( terminate name ) #00 ;frame #0012 ADD2 LDA #00 SWP ;frame #0013 ADD2 ADD2 STA
+		;frame INC2 ;frame #0013 ADD2 upsert-peer
+		DUP #ff EQU ?{
+			( flags: keep unread bit, take path bit ) DUP peer-addr #0010 ADD2 STH2
+			STH2kr LDA #80 AND ;frame #0011 ADD2 LDA #01 AND ORA
+			STH2r STA }
+		POP !<draw-peers>
+	&peers-end ( type -- )
+		POP !<draw-peers>
+	&identity ( type -- )
+		POP
+		( terminate name ) #00 ;frame #0011 ADD2 LDA #00 SWP ;frame #0012 ADD2 ADD2 STA
+		;frame INC2 ;self-hash #10 copy-n
+		;frame #0012 ADD2 ;self-name #1f scpy-lim
+		!<draw-title>
+	&log ( type -- )
+		POP
+		( terminate text ) #00 ;frame INC2 LDA #00 SWP ;frame INC2 INC2 ADD2 STA
+		;frame INC2 INC2 !<set-status>
+
+(
+@|keyboard )
+
+@on-key ( -> )
+	.Controller/key DEI
+	DUP ?{ POP !on-button }
+	.Controller/button DEI #01 AND ?on-ctrl-key
+	DUP #0d EQU ?&enter
+	DUP #08 EQU ?&bksp
+	DUP #1b EQU ?&quit
+	DUP #09 EQU ?&announce
+	DUP #20 LTH ?&drop
+	DUP #7f LTH ?&type
+	&drop POP BRK
+	&type ( key -- )
+		.compose-len LDZ DUP #c8 LTH ?{ POP2 BRK }
+		DUP INC .compose-len STZ
+		#00 SWP ;compose ADD2 STA
+		<draw-input> BRK
+	&enter POP send-message BRK
+	&bksp POP .compose-len LDZ DUP ?{ POP BRK }
+		#01 SUB .compose-len STZ <draw-input> BRK
+	&quit POP #80 .System/state DEO BRK
+	&announce POP do-announce BRK
+
+@on-ctrl-key ( key -> )
+	DUP LIT "q EQU ?&quit
+	DUP LIT "p EQU ?&peers
+	DUP LIT "a EQU ?&announce
+	POP BRK
+	&quit POP #80 .System/state DEO BRK
+	&peers POP ;cmd-peers #0001 send BRK
+	&announce POP do-announce BRK
+
+@on-button ( -> )
+	.Controller/button DEI
+	DUP #10 AND ?&up
+	DUP #20 AND ?&down
+	POP BRK
+	&up POP .peer-sel LDZ
+		DUP #ff EQU ?{ DUP ?{ POP BRK } #01 SUB select-peer BRK }
+		POP .peer-count LDZ ?{ BRK } #00 select-peer BRK
+	&down POP .peer-sel LDZ
+		DUP #ff EQU ?{ INC DUP .peer-count LDZ LTH ?{ POP BRK } select-peer BRK }
+		POP .peer-count LDZ ?{ BRK } #00 select-peer BRK
+
+(
+@|actions )
+
+@do-announce ( -- )
+	;cmd-announce #0001 send
+	;txt-announced !<set-status>
+
+@select-peer ( idx -- )
+	DUP .peer-sel STZ
+	peer-addr #0010 ADD2 LDAk #7f AND ROT ROT STA
+	load-conversation <draw-peers> !<draw-conversation>
+
+@send-message ( -- )
+	.compose-len LDZ ?{ JMP2r }
+	.peer-sel LDZ INCk ?{ POP ;txt-nopeer !<set-status> }
+	( ref ) .ref LDZ2 INC2k .ref STZ2 ;cmd-send/ref STA2
+	( dest ) peer-addr ;cmd-send/dest #10 copy-n
+	( len ) #00 .compose-len LDZ ;cmd-send/len STA2
+	( text ) ;compose ;cmd-send/text .compose-len LDZ copy-n
+	;cmd-send #00 .compose-len LDZ #0015 ADD2 send
+	#00 .compose-len STZ <draw-input>
+	;txt-sending !<set-status>
+
+@send ( payload* len* -- )
+	.Reticulum/length DEO2
+	.Reticulum/addr DEO2
+	#01 .Reticulum/write DEO
+	JMP2r
+
+( read lxmf/<hash>.txt for the selected peer into text; keep the last
+  8K chunk of a long file and drop its first, partial line )
+
+@load-conversation ( -- )
+	#00 ;text STA
+	#00 .chunks STZ
+	.peer-sel LDZ INCk ?{ POP JMP2r }
+	peer-addr ;path/hex #10 hexn
+	;path .File/name DEO2
+	&read
+		#2000 .File/length DEO2
+		;text .File/read DEO2
+		.chunks LDZk INC SWP STZ
+		.File/success DEI2 #2000 EQU2 ?&read
+	#00 ;text .File/success DEI2 ADD2 STA
+	JMP2r
+
+@text-start ( -- str* )
+	;text .chunks LDZ #01 GTH ?skip-line
+	JMP2r
+
+(
+@|peer table: 32 records of 48 bytes: hash[16] flags name[31] )
+
+@peer-addr ( idx -- addr* )
+	#00 SWP DUP2 #50 SFT2 SWP2 #40 SFT2 ADD2 ;peers ADD2 JMP2r
+
+@find-peer ( hash* -- idx|ff )
+	LITr 00
+	&l STHkr .peer-count LDZ LTH ?{ POP2 POPr #ff JMP2r }
+		DUP2 STHkr peer-addr hash-eq ?{ INCr !&l }
+		POP2 STHr JMP2r
+
+@upsert-peer ( hash* name* -- idx|ff )
+	OVR2 find-peer INCk ?&found
+	POP .peer-count LDZ DUP #20 LTH ?{ POP POP2 POP2 #ff JMP2r }
+	DUP INC .peer-count STZ STH
+	STHkr peer-addr STH2
+	( flags ) #00 STH2kr #0010 ADD2 STA
+	( hash ) OVR2 STH2kr #10 copy-n
+	( name, or hex of the hash when unknown )
+	LDAk ?{ POP2 STH2kr #0011 ADD2 #04 hexn #00 STH2kr #0019 ADD2 STA !&done }
+	STH2kr #0011 ADD2 #1e scpy-lim POP2
+	&done POP2r STHr JMP2r
+	&found ( hash* name* idx -- idx )
+		STH
+		LDAk ?{ POP2 POP2 STHr JMP2r }
+		STHkr peer-addr #0011 ADD2 #1e scpy-lim
+		POP2 STHr JMP2r
+
+@hash-eq ( a* b* -- f )
+	LITr 10
+	&l STHkr ?{ POP2 POP2 POPr #01 JMP2r }
+		OVR2 LDA STH LDAk STHr EQU ?{ POP2 POP2 POPr #00 JMP2r }
+		INC2 SWP2 INC2 SWP2 LITr 01 SUBr !&l
+
+(
+@|drawing )
+
+@<redraw-all> ( -- )
+	#01 .Screen/auto DEO
+	#0000 .Screen/x DEO2 #0000 .Screen/y DEO2 #80 .Screen/pixel DEO
+	<draw-title> <draw-frame> <draw-peers> <draw-conversation> <draw-input>
+	;txt-hello !<set-status>
+
+@<draw-title> ( -- )
+	#04 ;<draw-chr>/color STA
+	#0000 .Screen/x DEO2 #0000 .Screen/y DEO2
+	;txt-title #06 draw-padded
+	;self-name #14 draw-padded
+	#20 <draw-chr>
+	;self-hash #04 draw-hex-bytes
+	#17 <draw-spaces>
+	.connected LDZ LIT "B flag-chr <draw-chr> #20 <draw-chr>
+	.state-flags LDZ #01 AND LIT "R flag-chr <draw-chr> #20 <draw-chr>
+	.state-flags LDZ #02 AND LIT "L flag-chr <draw-chr> #20 <draw-chr>
+	JMP2r
+
+@<draw-frame> ( -- )
+	#03 ;<draw-chr>/color STA
+	#01 &v DUP #26 LTH ?{ POP !&h }
+		#0080 .Screen/x DEO2 DUP #00 SWP #30 SFT2 .Screen/y DEO2
+		LIT "| <draw-chr> INC !&v
+	&h #0088 .Screen/x DEO2 #0128 .Screen/y DEO2
+	#2f &hl DUP ?{ POP JMP2r } LIT "- <draw-chr> #01 SUB !&hl
+
+@<draw-peers> ( -- )
+	#00
+	&row ( idx -- )
+		DUP #23 LTH ?{ POP JMP2r }
+		DUP INC INC #00 SWP #30 SFT2 .Screen/y DEO2 #0000 .Screen/x DEO2
+		DUP sel-color ;<draw-chr>/color STA
+		DUP .peer-count LDZ LTH ?{ #10 <draw-spaces> INC !&row }
+		DUP peer-addr DUP2 #0010 ADD2 LDA
+		DUP unread-chr <draw-chr> path-chr <draw-chr>
+		#0011 ADD2 #0e draw-padded
+		INC !&row
+
+@<draw-conversation> ( -- )
+	#01 ;<draw-chr>/color STA
+	text-start DUP2 count-lines #0023 SUB2 DUP2 #8000 LTH2 ?{ POP2 #0000 }
+	skip-lines
+	#0002
+	&row ( str* row* -- )
+		DUP2 #0025 LTH2 ?{ POP2 POP2 JMP2r }
+		DUP2 #30 SFT2 .Screen/y DEO2 #0088 .Screen/x DEO2
+		SWP2 draw-line SWP2 INC2 !&row
+
+( one conversation line, 47 wide, without the leading date )
+
+@draw-line ( str* -- next* )
+	LDAk ?{ #2f <draw-spaces> JMP2r }
+	DUP2 #0004 ADD2 LDA LIT "- EQU ?{ !&loop } #000b ADD2
+	&loop LITr 2f
+	&c LDAk DUP ?{ POP !&pad }
+		DUP #0a EQU ?{
+			STHkr ?{ POP INC2 !&c }
+			<draw-chr> LITr 01 SUBr INC2 !&c }
+		POP INC2
+	&pad STHr <draw-spaces> JMP2r
+
+@<draw-input> ( -- )
+	#02 ;<draw-chr>/color STA
+	#0088 .Screen/x DEO2 #0130 .Screen/y DEO2
+	LIT "> <draw-chr> #20 <draw-chr>
+	#00 .compose-len LDZ #002c SUB2 DUP2 #8000 LTH2 ?{ POP2 #0000 }
+	;compose ADD2
+	.compose-len LDZ DUP #2c GTH ?{ !&n } POP #2c
+	&n DUP STH draw-n
+	LIT "_ <draw-chr>
+	#2c STHr SUB <draw-spaces>
+	JMP2r
+
+@<set-status> ( str* -- )
+	#03 ;<draw-chr>/color STA
+	#0000 .Screen/x DEO2 #0138 .Screen/y DEO2
+	#40 !draw-padded
+
+(
+@|text helpers )
+
+@<draw-chr> ( c -- )
+	#00 SWP #30 SFT2 ;font-atari8 ADD2 .Screen/addr DEO2
+	[ LIT2 &color 01 -Screen/sprite ] DEO
+	JMP2r
+
+@<draw-spaces> ( n -- )
+	&l DUP ?{ POP JMP2r } #20 <draw-chr> #01 SUB !&l
+
+@draw-n ( str* n -- )
+	STH
+	&l STHkr ?{ POP2 POPr JMP2r }
+		LDAk <draw-chr> INC2 LITr 01 SUBr !&l
+
+@draw-padded ( str* n -- )
+	STH
+	&l STHkr ?{ POP2 POPr JMP2r }
+		LDAk ?{ POP2 STHr <draw-spaces> JMP2r }
+		LDAk <draw-chr> INC2 LITr 01 SUBr !&l
+
+@draw-hex-bytes ( addr* n -- )
+	STH
+	&l STHkr ?{ POP2 POPr JMP2r }
+		LDAk DUP #04 SFT hex-chr <draw-chr> hex-chr <draw-chr>
+		INC2 LITr 01 SUBr !&l
+
+@hexn ( src* dst* n -- )
+	STH
+	&l STHkr ?{ POP2 POP2 POPr JMP2r }
+		SWP2 LDAk STH INC2 SWP2 STHr ROT ROT put-hex
+		LITr 01 SUBr !&l
+
+@put-hex ( byte dst* -- dst+2* )
+	STH2 DUP #04 SFT hex-chr STH2kr STA INC2r
+	hex-chr STH2kr STA INC2r STH2r JMP2r
+
+@hex-chr ( nibble -- c )
+	#0f AND #30 ADD DUP #39 GTH #27 MUL ADD JMP2r
+
+@sel-color ( idx -- color )
+	.peer-sel LDZ EQU ?{ #01 JMP2r } #04 JMP2r
+
+@unread-chr ( flags -- c )
+	#80 AND ?{ #20 JMP2r } LIT "* JMP2r
+
+@path-chr ( flags -- c )
+	#01 AND ?{ #20 JMP2r } LIT "> JMP2r
+
+@flag-chr ( flag c -- c' )
+	SWP ?{ POP LIT ". JMP2r } JMP2r
+
+@count-lines ( str* -- n* )
+	LIT2r 0000
+	&l LDAk ?{ POP2 STH2r JMP2r }
+		LDAk #0a EQU ?{ INC2 !&l } INC2r INC2 !&l
+
+@skip-line ( str* -- str* )
+	&l LDAk ?{ JMP2r } LDAk #0a EQU ?{ INC2 !&l } INC2 JMP2r
+
+@skip-lines ( str* n* -- str* )
+	&l ORAk ?{ POP2 JMP2r } #0001 SUB2 SWP2 skip-line SWP2 !&l
+
+@copy-n ( src* dst* n -- )
+	STH
+	&l STHkr ?{ POP2 POP2 POPr JMP2r }
+		DUP2 STH2 OVR2 LDA STH2r STA
+		INC2 SWP2 INC2 SWP2 LITr 01 SUBr !&l
+
+( copy at most max chars, stop at 0, always terminate )
+
+@scpy-lim ( src* dst* max -- )
+	STH
+	&l STHkr ?{ !&end }
+		OVR2 LDA DUP ?{ POP !&end }
+		STH DUP2 STHr ROT ROT STA
+		INC2 SWP2 INC2 SWP2 LITr 01 SUBr !&l
+	&end #00 ROT ROT STA POP2 POPr JMP2r
+
+(
+@|data )
+
+@txt-title 20 "chat 20 00
+@txt-hello "waiting 20 "for 20 "bridge... 00
+@txt-connected "connected 20 "to 20 "bridge 00
+@txt-sending "sending... 00
+@txt-sent "sent 00
+@txt-delivered "delivered 00
+@txt-failed "delivery 20 "failed 00
+@txt-nopeer "select 20 "a 20 "peer 20 "first 20 "up/down 00
+@txt-announced "announced 00
+@txt-newmsg "new 20 "message 00
+@empty 00
+
+@cmd-hello 01
+@cmd-peers 04
+@cmd-announce 03
+@cmd-send 02 &ref 0000 &dest $10 &len 0000 &text $100
+
+@path "lxmf/ &hex $20 ".txt 00
+
+( buffers: reserved before the include, because Drifblim treats ~include
+  as "continue in that file" and never returns to this one )
+
+@frame $400
+@compose $100
+@peers $600
+@text $2001
+
+~lib/atari8.tal

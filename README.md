@@ -18,11 +18,22 @@ make disk DISK=~/deck   # a Varvara disk directory to run Potato from
 cd ~/deck && ~/cyberdeck/uxn2/bin/uxn2 potato.rom
 ```
 
+## Run the chat on a laptop
+
+```sh
+make venv
+dev/run-dev.sh --stub     # one deck against a fake bridge (no Reticulum)
+dev/run-dev.sh            # two decks with real LXMF over a local Reticulum instance
+```
+
+In the chat ROM: Up/Down pick a peer, Enter sends, Tab announces, Esc
+leaves. `doc/reticulum-device.md` has the device and frame protocol.
+
 ## Test
 
 ```sh
 make venv                       # .venv with rns, lxmf and the bridge
-make test PY=.venv/bin/python   # uxn2 suite, device test, protocol, LXMF roundtrip
+make test PY=.venv/bin/python   # uxn2 suite, device test, chat ROM smoke test, protocol, LXMF roundtrip
 ```
 
 ## Provision the Pi
@@ -51,7 +62,9 @@ SSH keeps working. Rerun `setup.sh` after every `git pull`.
 - `roms/potato/`, `roms/noodle.tal` — 100r sources. Add Left, Nasu, Orca,
   Dexe, Bifurcan sources here as you get them; each is one line in the
   makefile.
-- `roms/deck/` — our ROMs. `roms/lib/` — shared includes (font).
+- `roms/deck/` — our ROMs: `chat.tal` (LXMF chat), `hello.tal` (starter).
+  `roms/lib/` — shared includes (font).
+- `dev/` — laptop harness running two decks against each other.
 - `deck/` — what lands on the Pi: `setup.sh`, systemd units, Reticulum
   config template, sudoers rule.
 - `tools/` — small helpers (`icn2tal.py`).

@@ -16,3 +16,6 @@ dev/disk-*/
 build/
 roms/potato/bin/
 deck/deck.env
+
+# dev harness state
+dev/state/

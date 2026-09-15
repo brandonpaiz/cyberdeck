@@ -4,8 +4,8 @@ A Varvara cyberdeck on an Orange Pi Zero 2W that boots straight into
 Potato, lets you write and assemble ROMs without leaving Varvara, and talks
 to the Reticulum network through an RNode via a new Varvara device.
 
-This document is the agreed plan. Nothing here is implemented yet; each
-section ends with what "done" looks like so the work can be checked off.
+This document is the agreed plan and, as stages land, the record of what
+was built. Each section ends with what "done" looks like.
 
 Decisions already made (from the interview on 2026-09-15):
 
@@ -451,24 +451,36 @@ antenna and range needs; they are plain edits to the config.
 
 ## 8. The chat ROM
 
-`roms/deck/chat.tal`, launched from Potato. First cut is deliberately small:
+`roms/deck/chat.tal`, launched from Potato. Implemented:
 
-- Screen: peer list on the left (name, a dot if a path is known), the
-  selected conversation on the right, a one-line compose field at the
-  bottom, a status bar (Reticulum / RNode / bridge bits from `status`,
-  last `LOG` line).
-- Keys: Up/Down select peer, Enter send, Tab announce, F5 refresh peers,
-  Escape halt (which returns you to Potato).
-- On peer selection it reads `lxmf/<hash>.txt` with the File device and
-  shows the tail, so history costs the ROM nothing.
-- `MESSAGE` frames append to the view when they match the selected peer;
-  otherwise the peer gets an unread marker.
-- `DELIVERY` updates a small glyph next to each sent line.
-- The ROM includes a `lib/` font and text helpers we write ourselves, or
-  the uxn-utils font files if you add them to `roms/100r/`.
+- Screen: peer list on the left (unread marker, `>` when a path is known,
+  name), the selected conversation on the right, a compose line, and a
+  status line showing delivery state and the bridge's log lines. The
+  title bar shows our display name, address prefix and three flags:
+  `B` bridge socket, `R` Reticulum up, `L` RNode online.
+- Keys: Up/Down select a peer, Enter send, Backspace edit, Tab or Ctrl+A
+  announce, Ctrl+P refresh the peer list, Esc or Ctrl+Q halt (which
+  returns you to Potato). F-keys are taken by uxn2 itself.
+- On peer selection, and on every `MESSAGE` or `DELIVERY` for the selected
+  peer, it re-reads `lxmf/<hash>.txt` with the File device and shows the
+  tail, dropping the date so lines read `HH:MM name: text`. A long file is
+  read in 8K chunks and only the last chunk is kept. Messages for other
+  peers set an unread marker.
+- Peers arrive as `PEER` frames (in reply to `PEERS` on connect, and on
+  every announce). A message from an unknown peer adds it under its hash
+  prefix until an announce supplies a name.
+- The font is Potato's Atari 8-bit face via `~lib/atari8.tal`.
 
-Done when: two decks (or laptop and deck) exchange messages, delivery
-states update, and a message from Sideband on a phone shows up.
+Two Drifblim facts shaped the source: `~include` never returns to the
+including file, so the include is the last token and the ROM's buffers are
+reserved before it (they are zero bytes in the ROM); and `OVR2` on a stack
+with a byte on top is misaligned, so byte copies go through the return
+stack.
+
+Verified with the stub bridge under Xvfb (screenshots of every state) and
+by `bridge/tests/test_chat_rom.py`. Not yet verified: against a real peer
+such as Sideband, which needs the deck or the laptop harness on a network
+with one.
 
 ## 9. Laptop dev harness
 
@@ -534,7 +546,7 @@ Each stage is one branch and one review.
    stub tests, `etc/tests/reticulum.tal`. Done; `make test` covers the
    device, the protocol and a two-process LXMF roundtrip.
 3. **Chat ROM and dev harness.** `chat.tal`, `run-dev.sh`, two decks on a
-   laptop. Verify against Sideband over WiFi.
+   laptop. Done in the repo; still to verify against Sideband over WiFi.
 4. **RNode on the deck.** Config rendering, port detection, end-to-end over
    LoRa.
 5. **NomadNet** as sketched in section 11.

@@ -1,0 +1,15 @@
+# Throwaway Reticulum config for dev/run-dev.sh. The first bridge becomes
+# the shared instance; the second connects to it. AutoInterface lets the
+# two local decks also reach a real cyberdeck on the same network.
+[reticulum]
+  enable_transport = No
+  share_instance = Yes
+  instance_name = cyberdeck-dev
+
+[logging]
+  loglevel = 3
+
+[interfaces]
+  [[LAN]]
+    type = AutoInterface
+    enabled = Yes

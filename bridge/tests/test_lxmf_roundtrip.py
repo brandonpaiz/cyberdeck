@@ -159,7 +159,12 @@ class RoundtripTest(unittest.TestCase):
                 a.wait(p.DELIVERY, 60, lambda f: f[1:3] == b"\x00\x07" and f[3] == p.DELIVERY_DELIVERED)
 
                 with open(os.path.join(disk_b, "lxmf", hash_a.hex() + ".txt"), encoding="utf-8") as f:
-                    self.assertIn("alice: hello bob", f.read())
+                    self.assertIn(": hello bob", f.read())
+                # bob may have missed alice's start-up announce (his TCP link
+                # came up late); the bridge then requests a path, and the
+                # path response tells him her name.
+                peer_a = b.wait(p.PEER, 30, lambda f: f[1:17] == hash_a and f[19:19 + f[18]] == b"alice")
+                self.assertEqual(peer_a[19:19 + peer_a[18]], b"alice")
             finally:
                 for c in clients:
                     c.close()

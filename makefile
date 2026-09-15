@@ -18,7 +18,7 @@ ABS_UXN2 := $(abspath $(UXN2))
 ABS_ASM  := $(abspath $(ASM))
 
 # ROMs assembled from sources in roms/. Add a line per ROM.
-ROMS := $(BUILD)/potato.rom $(BUILD)/noodle.rom $(BUILD)/drifblim.rom $(BUILD)/hello.rom
+ROMS := $(BUILD)/potato.rom $(BUILD)/noodle.rom $(BUILD)/drifblim.rom $(BUILD)/hello.rom $(BUILD)/chat.rom
 # ROMs that only exist as binaries (until their sources land in roms/).
 BIN_ROMS := roms/potato/etc/nasu.rom
 
