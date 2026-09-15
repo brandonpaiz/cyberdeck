@@ -1,0 +1,158 @@
+( 54K . System Device Tests )
+
+|00 @System/vector $2 &expansion $2 &wst $1 &rst $1 &metadata $2 &r $2 &g $2 &b $2 &debug $1 &state $1
+|10 @Console/vector $2 &read $1 &pad $4 &type $1 &write $1 &error $1
+|0050 @Varvara/version
+
+|100
+
+@on-reset ( -> )
+	;meta #06 DEO2
+	( | Halt recover )
+	[ LIT2 80 -System/state ] DEO
+	[ LIT2 01 -System/state ] DEO
+	[ LIT2 00 -System/state ] DEO
+	( | )
+	#800f DEO
+	system/test-wst ;dict/wst ROT <test>
+	system/test-rst ;dict/rst ROT <test>
+	;dict/cpyl system/test-copyl <test>
+	;dict/cpyr system/test-copyr <test>
+	;dict/cpyl2 system/test-copyl2 <test>
+	;dict/fill system/test-fill <test>
+	BRK
+	( | boundary check )
+	;mmu-over .System/expansion DEO2
+	;dict/over #0000 LDA #ffff LDA #8888 EQU2 <test>
+	BRK
+
+@meta 00
+	( name ) "System 20 "Device 20 "Test(80K) 0a
+	( details ) "Testing 20 "Program 0a
+	( author ) "By 20 "Devine 20 "Lu 20 "Linvega 0a
+	( date ) "24 20 "Jun 20 "2026 00
+	( . ) 01
+	( - ) 56 =Varvara/version
+
+(
+@|test )
+
+@system/test-wst ( -- pass )
+	( 1 ) #12 [ LITr -System/wst ] DEIr POP
+	( 2 ) #1234 [ LITr -System/wst ] DEIr POP2
+	( ) STH2r #0102 EQU2 JMP2r
+
+@system/test-rst ( -- pass )
+	( 1 ) LITr 12 .System/rst DEI POPr
+	( 2 ) LIT2r 1234 .System/rst DEI POP2r
+	( account for return addr+2 ) #0304 EQU2 JMP2r
+
+@system/test-fill ( -- pass )
+	;buf #0003 ADD2 ;mmu-fill/a STA2
+	;mmu-fill .System/expansion DEO2
+	;buf #0013 ;res4 mem/cmp
+	( | test clamp )
+	;mmu-fill-of .System/expansion DEO2
+	#fffe LDA2 LIT2 "AA EQU2 AND
+	( | read overflow )
+	;mmu-fill-mov .System/expansion DEO2
+	;res LDA2 #0000 EQU2 AND JMP2r
+
+@system/test-copyl ( -- pass )
+	;buf #0006 ADD2 ;mmu-cpyl/a STA2
+	;buf #0003 ADD2 ;mmu-cpyl/b STA2
+	;mmu-cpyl .System/expansion DEO2
+	;buf #0013 ;res1 mem/cmp
+	( | test clamp )
+	;mmu-cpyl-of .System/expansion DEO2
+	#fffe LDA2 LIT2 "BB EQU2 AND
+	( | read overflow )
+	;mmu-fill-mov .System/expansion DEO2
+	;res LDA2 #0000 EQU2 AND JMP2r
+
+@system/test-copyr ( -- pass )
+	;buf #0003 ADD2 ;mmu-cpyr/a STA2
+	;buf #0009 ADD2 ;mmu-cpyr/b STA2
+	;mmu-cpyr .System/expansion DEO2
+	;buf #0013 ;res2 mem/cmp
+	( | test clamp )
+	;mmu-cpyr-of .System/expansion DEO2
+	#fffe LDA2 LIT2 "CC EQU2 AND
+	( | read overflow )
+	;mmu-fill-mov .System/expansion DEO2
+	;res LDA2 #0000 EQU2 AND JMP2r
+
+@system/test-copyl2 ( -- pass )
+	;buf #0009 ADD2 ;mmu-cpyl/a STA2
+	;buf #0006 ADD2 ;mmu-cpyl/b STA2
+	;mmu-cpyl .System/expansion DEO2
+	;buf #0013 ;res3 !mem/cmp
+
+(
+@|Helpers )
+
+@<test> ( name* f -- )
+	?{
+		str/<print>
+		#010f DEO
+		;dict/fail !str/<print> }
+	str/<print>
+	;dict/pass
+	( >> )
+
+@str/<print> ( str* -- )
+	LDAk DUP ?{ POP POP2 JMP2r }
+	.Console/write DEO
+	INC2 !/<print>
+
+@mem/cmp ( a* length* b* -- t )
+	STH2
+	OVR2 ADD2 SWP2
+	&>l
+		EQU2k ?{
+			LDAk LDAkr STHr NEQ ?{ INC2 INC2r !&>l } }
+	POP2r EQU2 JMP2r
+
+@dict
+	&wst "System/wst: 20 $1
+	&rst "System/rst: 20 $1
+	&cpyl "System/cpyl: 20 $1
+	&cpyr "System/cpyr: 20 $1
+	&cpyl2 "System/cpyl2: 20 $1
+	&fill "System/fill: 20 $1
+	&over "System/overflow: 20 $1
+	&pass "pass 0a $1
+	&fail "fail 0a $1
+
+@buf [ "......[hello]..... $1 ]
+
+@res1 [ "...[hello]lo]..... $1 ]
+
+@res2 [ "...[hello[hello].. $1 ]
+
+@res3 [ "...[he[hello]lo].. $1 ]
+
+@res4 [ "...-------------.. $1 ]
+
+@fill-b [ "BBBB 00 ]
+
+@fill-c [ "CCCC 00 ]
+
+@mmu-fill [ 00 000d 0000 &a $2 2d ]
+
+@mmu-fill-of [ 00 0004 0000 fffe "A ]
+
+@mmu-fill-mov [ 01 0002 0001 0000 =res ]
+
+@mmu-cpyl [ 01 0007 0000 &a $2 0000 &b $2 ]
+
+@mmu-cpyl-of [ 01 0004 0000 =fill-b 0000 fffe ]
+
+@mmu-cpyr [ 02 0007 0000 &a $2 0000 &b $2 ]
+
+@mmu-cpyr-of [ 02 0004 0000 =fill-c 0000 fffe ]
+
+@mmu-over [ 00 0002 0000 ffff 88 ]
+
+@res $2
+

@@ -1,0 +1,1918 @@
+( 54K . M/PC )
+
+|00 @System/vector $2 &expansion $2 &wst $1 &rst $1 &metadata $2 &r $2 &g $2 &b $2 &debug $1 &state $1
+|10 @Console/vector $2 &read $1 &pad $4 &type $1 &write $1 &error $1
+|20 @Screen/vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|80 @Controller/vector $2 &button $1 &key $1
+|90 @Mouse/vector $2 &x $2 &y $2 &state $1 &chord $1 &pad $4 &scrolly &scrolly-hb $1 &scrolly-lb $1
+|a0 @File/vector $2 &success $1 &success-lb $1 &stat $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2
+|b0 @File2/vector $2 &success $1 &success-lb $1 &stat $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2
+|c0 @DateTime &year $2 &month $1 &day $1 &hour $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1
+
+(
+@|Enums )
+
+|0050 @Varvara/version
+|00fd @loader/entry
+|0100 @loader/pagelen
+|0080 @path/buflen
+|0200 @bios/buflen
+|0800 @dir/buflen
+|0120 @meta/buflen
+|ff00 @dict/cap
+|0008 @bios/anchor-x
+|0028 @bios/anchor-y
+
+|000
+
+	@input/buf $80
+	@loader/buf
+
+|100
+
+@on-reset ( -> )
+	;meta #06 DEO2
+	theme/<load>
+	;dict/home-path path/<set>
+	window/<update>
+	window/<draw-spacer>
+	input/<bind>
+	bios/<welcome>
+	.Console/type DEI ?{ project/<load>
+		BRK }
+	loader/<set-instant>
+	BRK
+
+@meta 00
+	( name ) "M/PC 0a
+	( details ) "Monitor/Program 20 "Control 0a
+	( author ) "By 20 "Devine 20 "Lu 20 "Linvega 0a
+	( date ) "15 20 "Aug 20 "2026 00
+	( . ) 03
+	( - ) 56 =Varvara/version
+	( - ) 83 =appicon
+	( - ) a0 =manifest/dat
+
+@manifest/dat ( . )
+	_{ =dict/m_pc
+	( ) 10 00 =scroll/<up> =dict/scroll-up
+	( ) 20 00 =scroll/<down> =dict/scroll-down
+	( ) 40 00 =sel/<prev> =dict/sel-prev
+	( ) 80 00 =sel/<next> =dict/sel-next
+	( ) 01 00 =sel/<use> =dict/sel-pick
+	( ) 02 00 =bios/<dir> =dict/directory }
+	_{ =dict/input
+	( ) 00 0d =input/<eval> =dict/eval
+	( ) 04 0d =input/<eval-partial> =dict/eval-partial
+	( ) 00 1b =input/<blank> =dict/clear }
+	00
+
+%Screen/<set-pos> ( x* y* -- ) {
+	.Screen/y DEO2
+	.Screen/x DEO2 }
+
+(
+@|Project )
+
+@project/<load> ( -- )
+	;&path .File2/name DEO2
+	#0001 .File2/length DEO2
+	&>w
+		;&c .File2/read DEO2
+		.File2/success-lb DEI ?{ JMP2r }
+		[ LIT &c $1 ] input/<handle-input> !/>w
+
+	&path ".m_pc 00
+
+(
+@|Input )
+
+@input/on-controller ( -> )
+	.Controller/button DEI2 DUP2 manifest/scan INC2k ORA ?{
+		POP2
+		( key ) /<handle-input>
+		( button ) POP BRK }
+	( * ) JSR2 POP2 BRK
+
+@input/on-console ( -> )
+	.Console/read DEI
+	( | mute arg spacers )
+	[ LIT2 03 -Console/type ] DEI NEQ ?{ POP #20 }
+	DUP LIT "\ NEQ ?{
+		POP ;&on-console-escape .Console/vector DEO2
+		BRK }
+	/<handle-input>
+	BRK
+
+@input/on-console-escape ( -> )
+	.Console/read ] DEI DUP #0a EQU ?{
+		LIT "\ /<handle-input>
+		DUP /<handle-input> }
+	;&on-console .Console/vector DEO2
+	BRK
+
+@input/<bind> ( -- )
+	;&on-controller .Controller/vector DEO2
+	;&on-console .Console/vector DEO2 !/<redraw>
+
+@input/<handle-input> ( c -- )
+	DUP ?{ POP JMP2r }
+	DUP #08 EQU ?/on-bs
+	DUP #09 EQU ?/on-tab
+	DUP #0a EQU ?/on-enter
+	DUP #7f EQU ?/on-del
+	DUP #20 GTH ?{ POP #20 }
+	sel/<reset-draw>
+	/<push>
+	autocomplete/<update> !/<redraw>
+
+	&on-bs ( c -- )
+	POP /<pop>
+	autocomplete/<reset> !/<redraw>
+
+	&on-tab ( c -- )
+	POP autocomplete/get INC2k ORA ?{ POP2 JMP2r }
+	/<push-str> !/<redraw>
+
+	&on-enter ( c -- )
+	POP autocomplete/<reset> !/<eval>
+
+	&on-del ( c -- )
+	POP !/<blank>
+
+@input/is-active ( -- t )
+	[ LIT2 -&buf _&+ptr ] LDR NEQ JMP2r
+
+@input/get-length ( -- length* )
+	[ LIT2 00 _&+ptr ] LDR .&buf SUB JMP2r
+
+@input/<reset> ( -- )
+	#0000 .&buf STZ2
+	[ LIT2 -&buf _&+ptr ] STR !autocomplete/<reset>
+
+@input/<push-str-quoted> ( str* -- )
+	DUP2 str/is-word ?/<push-str>
+	LIT "" /<push>
+	/<push-str>
+	LIT "" !/<push>
+
+@input/<push-str> ( str* -- )
+	&>w
+		LDAk DUP ?{ POP POP2 !/<redraw> }
+		str/escape /<push>
+		INC2 !/>w
+
+@input/<push> ( c -- )
+	[ LIT2 00 &+ptr -&buf ] INCk ,&+ptr STR
+	STZ2
+	JMP2r
+
+@input/<pop> ( -- )
+	,&+ptr LDR
+	( cap ) DUP .&buf NEQ ?{ POP JMP2r }
+	#01 SUB #00 OVR STZ
+	,&+ptr STR
+	JMP2r
+
+@input/<eval-partial> ( -- )
+	;&buf LDAk ?{ POP2 !bios/<welcome> }
+	bios/<parse-partial> !/<reset-draw>
+
+@input/<eval> ( -- )
+	sel/is-active ?sel/<pick>
+	( >> )
+
+@input/<eval-force> ( -- )
+	;&buf LDAk ?{ POP2 !bios/<welcome> }
+	bios/<parse> !/<reset-draw>
+
+@input/<blank> ( -- )
+	sel/is-active ?sel/<reset-draw>
+	bios/<redraw>
+	( >> )
+
+@input/<reset-draw> ( -- )
+	/<reset>
+	( >> )
+
+@input/<redraw> ( -- )
+	;bios/anchor-x #0018 Screen/<set-pos>
+	[ LIT2 e0 -Screen/pixel ] DEO
+	#0008 .Screen/y DEO2
+	path/<draw>
+	/get-origin #45 font/<draw-str-color>
+	autocomplete/<draw>
+	;&caret !font/<draw-sprite>
+
+@input/get-origin ( -- buf* )
+	/get-length window/get-margin #03 SFT2 #0002 SUB2 LTH2k ?{
+		( follow cursor ) SUB2 ;&buf ADD2 JMP2r }
+	POP2 POP2 ;&buf JMP2r
+
+@autocomplete/get ( -- str* )
+	,&addr LDR2 INC2k ORA ?{ JMP2r }
+	;input/buf str/len ADD2 JMP2r
+
+@autocomplete/<reset> ( -- )
+	#ffff ,&addr STR2
+	JMP2r
+
+@autocomplete/<update> ( -- )
+	;input/buf bios/find-seg INC2k ORA ?{ POP2 !/<reset> }
+	LDA2 ,&addr STR2
+	JMP2r
+
+@autocomplete/<draw> ( -- )
+	[ LIT2 &addr $2 ] INC2k ORA ?{ POP2 JMP2r }
+	input/get-length ADD2 #43 !font/<draw-str-color>
+
+(
+@|Bios )
+
+@bios/<parse> ( str* -- )
+	/<reset>
+	dict/<reset>
+	( >> )
+
+@bios/<parse-partial> ( str* -- )
+	sel/<reset>
+	str/walk-ws banner/<request>
+	&>w
+		/parse-symbol str/walk-ws LDAk ?/>w
+	POP2 reader/is-bound ?{ !/<redraw> }
+	JMP2r
+
+@bios/parse-symbol ( addr* -- next* )
+	LDAk LIT "~ EQU ?/parse-include
+	dict/alloc !/<push>
+
+@bios/parse-include ( addr* -- next* )
+	INC2 dict/alloc path/make dir/load-temp !/<parse-partial>
+
+@bios/<welcome> ( -- )
+	/<reset>
+	banner/<request>
+	now/<eval>
+	;dict/ready2 /<push> !/<redraw>
+
+@bios/<dir> ( -- )
+	sel/is-active ?sel/<reset-draw>
+	input/is-active ?input/<reset-draw>
+	/<reset>
+	dir/<eval> !/<redraw>
+
+@bios/find-seg ( str* -- <res>* )
+	,&t STR2
+	;&+ptr LDA2 ;&buf
+	&>lfs
+		NEQ2k ?{
+			POP2 #ffff &end NIP2 JMP2r }
+		LDA2k [ LIT2 &t $2 ] str/seg ?/end
+		INC2 INC2 !/>lfs
+
+@bios/get-symbol ( id -- sym* )
+	#00 SWP DUP ADD ;&buf ADD2 LDA2 JMP2r
+
+@bios/get-depth ( -- depth* )
+	,&+ptr LDR2 ;&buf SUB2 #01 SFT2 JMP2r
+
+@bios/is-empty ( -- fail )
+	,&+ptr LDR2 ;&buf EQU2 JMP2r
+
+@bios/is-thtwo ( -- fail )
+	/get-depth #0002 LTH2 JMP2r
+
+@bios/is-ththree ( -- fail )
+	/get-depth #0003 LTH2 JMP2r
+
+@bios/<reset> ( -- )
+	;&buf ,&+ptr STR2 !scroll/<reset>
+
+@bios/<run> ( str* cmd* -- )
+	NIP2
+	( get cmd ) LDA2
+	( get eval ) INC2 INC2 LDA2
+	( apply ) JMP2
+
+@bios/<push-bool> ( bool -- )
+	?{ ;dict/f !/<push> }
+	;dict/t
+	( >> )
+
+@bios/<push> ( str* -- )
+	DUP2 cmds/find INC2k ORA ?/<run>
+	POP2
+	( >> )
+
+@bios/<push-raw> ( str* -- )
+	( | put on stack )
+	[ LIT2 &+ptr =&buf ]
+	( clamp ) DUP2 ;&cap NEQ2 ?{ POP2 POP2 JMP2r }
+	INC2k INC2 ,&+ptr STR2
+	STA2
+	JMP2r
+
+@bios/pop ( -- addr* )
+	,&+ptr LDR2 #0002 SUB2 LDA2k SWP2 ,&+ptr STR2
+	JMP2r
+
+@bios/<push-err-underflow> ( -- )
+	;dict/err-underflow !/<push>
+
+@bios/<push-err-missing> ( -- )
+	;dict/err-missing !/<push>
+
+@bios/<push-err-binary> ( -- )
+	;dict/err-binary !/<push>
+
+@bios/<redraw> ( -- )
+	#0000 ;&anchor-y Screen/<set-pos>
+	[ LIT2 c0 -Screen/pixel ] DEO
+	;&anchor-y .Screen/y DEO2
+	,&+ptr LDR2 ;&buf scroll/get STHk DUP2 ADD2 ADD2
+	( | Draw scroll )
+	scroll/<draw>
+	&>l
+		NEQ2k ?{ POP2 POP2 POPr !banner/<draw> }
+		LDA2k symbol/make DUP2 /<draw-spacer>
+		STHkr sel/is-unselected symbol/<draw>
+		INCr INC2 INC2 !/>l
+
+@bios/<draw-spacer> ( symbol* -- )
+	font/get-width .Screen/x DEI2 ADD2 window/get-margin LTH2 ?{ !font/<draw-lb> }
+	.Screen/x DEI2k #0008 ADD2 ROT DEO2
+	JMP2r
+
+@bios/<use> ( id -- )
+	/get-symbol
+	( | handlers )
+	DUP2 str/is-dir ?/<use-mov>
+	DUP2 str/is-icn ?/<use-icn>
+	DUP2 str/is-rom ?/<use-run>
+	DUP2 path/make file/is-text ?/<use-txt>
+	POP2 JMP2r
+
+@bios/<use-mov> ( str* -- )
+	input/<push-str>
+	;&cmd-mov !input/<push-str>
+
+	&cmd-mov 20 "mov 00
+
+@bios/<use-icn> ( str* -- )
+	input/<push-str>
+	;&cmd-icn !input/<push-str>
+
+	&cmd-icn 20 "1 20 "icn 00
+
+@bios/<use-run> ( str* -- )
+	input/<push-str>
+	;&cmd-run !input/<push-str>
+
+	&cmd-run 20 "run 00
+
+@bios/<use-txt> ( name* -- )
+	input/<push-str>
+	;&cmd-txt !input/<push-str>
+
+	&cmd-txt 20 "0 20 "txt 00
+
+@symbol/<draw> ( str* unsel -- )
+	?{
+		DUP2 str/is-dir ?/<draw-dir>
+		DUP2 str/is-rom ?/<draw-use>
+		( selected ) #49 !font/<draw-str-color> }
+	( unselected ) #45 !font/<draw-str-color>
+
+@symbol/<draw-dir> ( str* -- )
+	#4d !font/<draw-str-color>
+
+@symbol/<draw-use> ( str* -- )
+	#44 !font/<draw-str-color>
+
+@symbol/make ( str* -- sym* )
+	;&buf DUP2 ,&+ptr STR2
+	SWP2 [ LIT2r 1c00 ]
+	&>w
+		NEQkr STHr ?{
+			[ LIT2 ".. ] /<push>
+			/<push> !/end }
+		LDAk DUP ?{
+			POP &end POP2r POP2 #00 !/<push> }
+		DUP #0a NEQ ?{ POP #20 }
+		/<push>
+		INCr INC2 !/>w
+
+@symbol/<push> ( c -- )
+	#00 [ LIT2 &+ptr =&buf ] INC2k ,&+ptr STR2
+	STA2
+	JMP2r
+
+(
+@|Path )
+
+@path/<move> ( str* -- )
+	DUP2 ;dict/out-path str/cmp ?/<pop>
+	( | Check if file is a folder )
+	LITr _&+ptr LDR2r /<push-str>
+	;&buf file/is-dir ?{
+		#00 STH2kr STA
+		LITr _&+ptr STR2r
+		JMP2r }
+	POP2r
+	( | Add missing slash )
+	/is-dir ?{ LIT "/ /<push> }
+	JMP2r
+
+@path/is-home ( -- t )
+	;&buf str/len #0002 EQU2 JMP2r
+
+@path/is-dir ( -- t )
+	,&+ptr LDR2 #0001 SUB2 LDA LIT "/ EQU JMP2r
+
+@path/<pop> ( str* -- )
+	POP2
+	( | find last slash )
+	;&buf ,&+ptr LDR2 #0001 SUB2
+	&>lp
+		#0001 SUB2 LDAk LIT "/ EQU ?{ LTH2k ?/>lp }
+	INC2 #0000 OVR2 STA2
+	,&+ptr STR2
+	POP2 JMP2r
+
+@path/<set> ( str* -- )
+	;&buf ,&+ptr STR2
+	( >> )
+
+@path/<push-str> ( str* -- )
+	&>w
+		LDAk DUP ?{ POP POP2 JMP2r }
+		/<push>
+		INC2 !/>w
+
+@path/<push> ( str* -- )
+	#00 [ LIT2 &+ptr =&buf ]
+	( clamp ) DUP2 ;&cap NEQ2 ?{ POP2 POP POP2 JMP2r }
+	INC2k ,&+ptr STR2
+	STA2
+	JMP2r
+
+@path/<draw> ( -- )
+	;&buf #45 !font/<draw-str-color>
+
+@path/make ( str* -- path* )
+	;&buf !dict/alloc-cat
+
+(
+@|Selection )
+
+@sel/<use> ( -- )
+	input/is-active ?input/<eval-force>
+	,&id LDR INCk ?bios/<use>
+	POP JMP2r
+
+@sel/<prev> ( -- )
+	,&id LDR
+	( clamp ) INCk ?{ POP JMP2r }
+	#01 SUB #00 OVR scroll/<follow> !/<set>
+
+@sel/<next> ( -- )
+	,&id LDR INC
+	( clamp ) DUP bios/get-depth NIP LTH ?/<set>
+	POP JMP2r
+
+@sel/has-meta ( -- t )
+	,&id LDR INCk ?{ POP #00 JMP2r }
+	bios/get-symbol DUP2 str/is-rom ?{ POP2 #00 JMP2r }
+	path/make file/get-meta ORAk ?{ POP2 #00 JMP2r }
+	meta/<load>
+	#01 JMP2r
+
+@sel/is-active ( -- bool )
+	#ff
+	( >> )
+
+@sel/is-unselected ( id -- bool )
+	[ LIT &id ff ] NEQ JMP2r
+
+@sel/<activate> ( -- )
+	#00
+	( >> )
+
+@sel/<set> ( id -- )
+	DUP ,&id LDR NEQ ?{ POP JMP2r }
+	,&id STR !bios/<redraw>
+
+@sel/<pick> ( -- )
+	,&id LDR INCk ?{ POP JMP2r }
+	bios/get-symbol
+	( clamp ) DUP2 str/len #0040 LTH2 ?{ POP2 !input/<redraw> }
+	input/<push-str-quoted>
+	#20 input/<push> !input/<redraw>
+
+@sel/<reset> ( -- )
+	[ LIT2 ff _&id ] STR
+	JMP2r
+
+@sel/<reset-draw> ( -- )
+	scroll/<reset>
+	,&id LDR /<reset>
+	,&id LDR NEQ ?bios/<redraw>
+	JMP2r
+
+@sel/<follow> ( id -- )
+	,&id LDR GTHk ?{ POP2 JMP2r }
+	POP ,&id STR
+	JMP2r
+
+(
+@|Scroll )
+
+@scroll/<up> ( -- )
+	,&+pos LDR2
+	( clamp ) ORAk ?{ POP2 JMP2r }
+	#0001 SUB2 /<set> !bios/<redraw>
+
+@scroll/<down> ( -- )
+	sel/is-active ?{ !sel/<activate> }
+	,&+pos LDR2
+	( clamp ) INC2k bios/get-depth LTH2 ?{ POP2 JMP2r }
+	INC2 DUP sel/<follow>
+	/<set> !bios/<redraw>
+
+@scroll/<follow> ( id* -- )
+	,&+pos LDR2 LTH2k ?{ POP2 POP2 JMP2r }
+	POP2 !/<set>
+
+@scroll/<reset> ( -- )
+	#0000
+	( >> )
+
+@scroll/<set> ( id* -- )
+	,&+pos STR2
+	JMP2r
+
+@scroll/get ( -- id* )
+	,&+pos LDR2 JMP2r
+
+@scroll/<draw> ( -- )
+	[ LIT2 &+pos $2 ] ORAk ?{ POP2 JMP2r }
+	;bios/anchor-x .Screen/x DEO2
+	bios/get-depth SWP2 INC2 SUB2 dec/make #43 font/<draw-str-color>
+	#09 !font/<draw-glyph>
+
+(
+@|Reader )
+
+@reader/on-controller ( -> )
+	.Controller/button DEI
+	( | handlers )
+	DUP #01 NEQ ?{ /<leave> }
+	DUP #10 NEQ ?{ /<select-prev> }
+	DUP #20 NEQ ?{ /<select-next> }
+	POP .Controller/key DEI DUP ?{ POP BRK }
+	/<leave>
+	input/<handle-input>
+	BRK
+
+@reader/<leave> ( -- )
+	input/<bind> !bios/<redraw>
+
+@reader/is-bound ( -- t )
+	.Controller/vector DEI2 ;&on-controller EQU2 JMP2r
+
+@reader/<bind> ( str* -- )
+	.File/name DEO2
+	;&on-controller .Controller/vector DEO2
+	( col ) window/get-cols #0001 SUB2 ,&col STR
+	POP
+	( row ) window/get-rows #01 SFT2 #0003 SUB2 ,&row STR
+	POP #0000 !/<select-line>
+
+@reader/<select-prev> ( -- )
+	,&line LDR2 ORAk ?{ POP2 JMP2r }
+	#0001 SUB2 !/<select-line>
+
+@reader/<select-next> ( -- )
+	[ LIT2 &line $2 ] INC2
+	( >> )
+
+@reader/<select-line> ( line* -- )
+	DUP2 file/seek-line ?{ POP2 JMP2r }
+	;bios/anchor-x ;bios/anchor-y Screen/<set-pos>
+	[ LIT2 c0 -Screen/pixel ] DEO
+	[ LIT2 15 -Screen/auto ] DEO
+	#0001 .File/length DEO2
+	( | Draw line number )
+	[ LITr &col $1 ] DUP2 dec/make
+	( store col ) DUP2 str/len #03 ADD STH
+	POP #43 font/<draw-str-color>
+	#09 font/<draw-glyph>
+	#20 font/<draw-glyph>
+	,&line STR2
+	( | Render )
+	#41 ;font/color STA
+	( | Stream )
+	[ LIT2 &row $1 00 ]
+	&>s
+		;&b .File/read DEO2
+		.File/success-lb DEI ?{
+			POP2 POP2r ;dict/eof #44 !font/<draw-str-color> }
+		( | hard-wrap )
+		GTHkr STHr ?{
+			;bios/anchor-x .Screen/y DEI2 #0010 ADD2 Screen/<set-pos>
+			INC POPr LITr 00 }
+		[ LIT &b $1 ] DUP #0a NEQ ?{
+			SWP INC SWP POPr LITr 00 }
+		font/<draw-glyph>
+		INCr GTHk ?/>s
+	POP2 POP2r JMP2r
+
+(
+@|Commands )
+
+@cmds/find ( str* -- <cmd>* )
+	,&fn STR2
+	;&lutend ;&lut
+	&>l
+		LDA2k LDA2 [ LIT2 &fn $2 ] str/cmp ?{
+			INC2 INC2 GTH2k ?/>l
+		POP2 #ffff }
+	NIP2 JMP2r
+
+@cmds/lut [ =cmd/api ]
+	&lut-clip [4
+	=dir/api =mov/api =now/api =run/api
+	=icn/api =txt/api =len/api =put/api
+	=get/api =cpy/api =era/api =ren/api
+	=pop/api =dup/api =ovr/api =swp/api
+	=rot/api =dec/api =hex/api =cat/api
+	=add/api =sub/api =cmp/api =and/api
+	=ora/api =rsz/api =out/api =bye/api
+	&lutend ]
+
+@cmd/<eval> ( -- )
+	;cmds/lutend ;cmds/lut-clip
+	&>l
+		LDA2k #0004 ADD2 bios/<push-raw>
+		INC2 INC2 GTH2k ?/>l
+	POP2 POP2 JMP2r
+	&api =dict/cmd =&<eval> "<cmd> 20 "( 20 09 20 ") 00
+
+@dir/<eval> ( -- )
+	;path/buf .File/name DEO2
+	;&buflen .File/length DEO2
+	;&buf .File/read DEO2
+	path/is-home ?{ ;dict/out-path bios/<push-raw> }
+	.File/success DEI2
+	( | Handlers )
+	DUP2 /<push-folders>
+	DUP2 /<push-files> !/<push-dotfiles>
+
+@dir/find-wallpaper ( -- size* )
+	;dict/home-path .File/name DEO2
+	;&buflen .File/length DEO2
+	;&buf .File/read DEO2
+	/<explode>
+	;&buf
+	&>w
+		str/is-wallpaper ?{
+			str/cap INC2 LDAk ?/>w
+		POP2 #ffff }
+	JMP2r
+
+@dir/<explode> ( -- )
+	;&buf
+	&>we
+		LDAk DUP ?{ POP POP2 JMP2r }
+		#1f GTH ?{ LITr 00 STH2k STAr }
+		INC2 !/>we
+
+@dir/<push-folders> ( length* -- )
+	;&buf ADD2 ;&buf
+	&>lfo
+		LDAk LIT "- NEQ STH
+		#0005 ADD2 STHr ?{
+			LDAk LIT ". EQU ?{ dict/alloc-line bios/<push-raw> } }
+		str/eol INC2 GTH2k ?/>lfo
+	POP2 POP2 JMP2r
+
+@dir/<push-files> ( length* -- )
+	;&buf ADD2 ;&buf
+	&>lfi
+		LDAk LIT "- EQU STH
+		#0005 ADD2 STHr ?{
+			LDAk LIT ". EQU ?{ dict/alloc-line bios/<push-raw> } }
+		str/eol INC2 GTH2k ?/>lfi
+	POP2 POP2 JMP2r
+
+@dir/<push-dotfiles> ( length* -- )
+	;&buf ADD2 ;&buf
+	&>ldf
+		#0005 ADD2 LDAk LIT ". NEQ ?{ dict/alloc-line bios/<push-raw> }
+		str/eol INC2 GTH2k ?/>ldf
+	POP2 POP2 JMP2r
+	&api =dict/dir =&<eval> "<dir> 20 "( 20 09 20 "[f] 20 ") 00
+
+@dir/load-temp ( addr* -- buf* )
+	.File/name DEO2
+	;&buflen .File/length DEO2
+	;&buf DUP2 .File/read DEO2
+	JMP2r
+
+@mov/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	bios/pop path/<move> !dir/<eval>
+	&api =dict/mov =&<eval> "<mov> 20 "( 20 "path 20 09 20 "[f] 20 ") 00
+
+@now/<eval> ( -- )
+	date/make bios/<push>
+	time/make !bios/<push>
+	&api =dict/now =&<eval> "<now> 20 "( 20 09 20 "date 20 "time 20 ") 00
+
+@run/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	bios/pop path/make
+	( ? ) DUP2 file/exists ?loader/<bind>
+	POP2 !bios/<push-err-missing>
+	&api =dict/run =&<eval> "<run> 20 "( 20 "f.rom 20 09 20 "ok 20 ") 00
+
+@txt/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	( line* ) bios/pop
+	( path* ) bios/pop path/make
+	( ? ) DUP2 file/exists ?{ POP2 POP2 !bios/<push-err-missing> }
+	( ? ) DUP2 file/is-text ?{ POP2 POP2 !bios/<push-err-binary> }
+	reader/<bind>
+	str/dec reader/<select-line>
+	;dict/ok !bios/<push>
+	&api =dict/txt =&<eval> "<txt> 20 "( 20 "f.txt 20 "line 20 09 20 "ok 20 ") 00
+
+@icn/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	( color ) bios/pop str/dec NIP
+	( path ) bios/pop path/make
+	( ? ) DUP2 file/exists ?{ POP2 POP !bios/<push-err-missing> }
+	ROT /<draw>
+	;dict/ok !bios/<push>
+
+@icn/<draw> ( name* blend -- )
+	#0f AND ,&blend STR
+	DUP2 .File/name DEO2
+	( | depth )
+	#0008 .File/length DEO2
+	[ LIT2r &blend 03 -Screen/sprite ] ;&buf .Screen/addr DEO2
+	( | size )
+	/read-size
+	( h ) #00 SWP SUBk ,&height STR
+	( y ) #31 SFT2 window/get-middle SWP2 SUB2 .Screen/y DEO2
+	( w ) #00 SWP SUBk ,&width STR
+	( x ) #31 SFT2 window/get-center SWP2 SUB2 ,&anchor STR2
+	( | draw )
+	[ LIT2 01 -Screen/auto ] DEO
+	[ LIT &height $1 ]
+	&>v
+		[ LIT2 &anchor $2 ] .Screen/x DEO2
+		[ LIT &width $1 ]
+		&>h
+			;&buf .File/read DEO2
+			DEOkr
+			INC DUP ?/>h
+		POP
+		( lb ) .Screen/y DEI2k #0008 ADD2 ROT DEO2
+		INC DUP ?/>v
+	POP POP2r JMP2r
+
+@icn/read-size ( str* -- w h )
+	str/cap #0009 SUB2
+	( no size ) INC2k INC2 LDA [ LIT "x ] EQU ?{ POP2 #1010 JMP2r }
+	LDA2k str/read-byte STH
+	#0003 ADD2 LDA2 str/read-byte STHr SWP JMP2r
+	&api =dict/icn =&<eval> "<icn> 20 "( 20 "f.icn 20 "blend 20 09 20 "ok 20 ") 00
+
+@put/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	bios/pop path/make .File/name DEO2
+	bios/pop DUP2 str/len .File/length DEO2
+	.File/write DEO2
+	;dict/ok !bios/<push>
+	&api =dict/put =&<eval> "<put> 20 "( 20 "body 20 "f 20 09 20 "ok 20 ") 00
+
+@get/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	bios/pop path/make
+	( ? ) DUP2 file/exists ?{ POP2 !bios/<push-err-missing> }
+	( ? ) DUP2 file/is-text ?{ POP2 !bios/<push-err-binary> }
+	dict/alloc-file !bios/<push>
+	&api =dict/get =&<eval> "<get> 20 "( 20 "f 20 09 20 "body 20 ") 00
+
+@cpy/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	( dst ) bios/pop path/make
+	( src ) bios/pop path/make
+	( ? ) DUP2 file/exists ?{ POP2 POP2 !bios/<push-err-missing> }
+	SWP2 file/<cpy>
+	;dict/ok !bios/<push>
+	&api =dict/cpy =&<eval> "<cpy> 20 "( 20 "fsrc 20 "fdst 20 09 20 "ok 20 ") 00
+
+@era/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	bios/pop path/make
+	( ? ) DUP2 file/exists ?{ POP2 !bios/<push-err-missing> }
+	.File/name DEO2
+	[ LIT2 01 -File/delete ] DEO
+	;dict/ok !bios/<push>
+	&api =dict/era =&<eval> "<era> 20 "( 20 "f 20 09 20 "ok 20 ") 00
+
+@ren/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	( dst ) bios/pop path/make
+	( src ) bios/pop path/make
+	( ? ) DUP2 file/exists ?{ POP2 POP2 !bios/<push-err-missing> }
+	DUP2 ROT2 file/<cpy>
+	.File/name DEO2
+	[ LIT2 01 -File/delete ] DEO
+	;dict/ok !bios/<push>
+	&api =dict/ren =&<eval> "<ren> 20 "( 20 "fsrc 20 "fdst 20 09 20 "ok 20 ") 00
+
+@len/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	bios/pop path/make
+	( ? ) DUP2 file/exists ?{ POP2 ;dict/zero !bios/<push> }
+	.File/name DEO2
+	#0004 .File/length DEO2
+	;&buf .File/stat DEO2
+	;&hb LDA2 str/read-byte ;&lb LDA2 str/read-byte hex/make dict/alloc NIP2 !bios/<push>
+	&api =dict/len =&<eval> "<len> 20 "( 20 "f 20 09 20 "hex 20 ") 00
+
+@dup/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	bios/pop DUP2 bios/<push> !bios/<push>
+	&api =dict/dup =&<eval> "<dup> 20 "( 20 "a 20 09 20 "a 20 "a 20 ") 00
+
+@ovr/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	( b ) bios/pop
+	( a ) bios/pop DUP2 bios/<push>
+	SWP2 bios/<push> !bios/<push>
+	&api =dict/ovr =&<eval> "<ovr> 20 "( 20 "a 20 "b 20 09 20 "a 20 "b 20 "a 20 ") 00
+
+@pop/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	bios/pop POP2 JMP2r
+	&api =dict/pop =&<eval> "<pop> 20 "( 20 "a 20 09 20 ") 00
+
+@swp/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	bios/pop bios/pop SWP2 bios/<push> !bios/<push>
+	&api =dict/swp =&<eval> "<swp> 20 "( 20 "a 20 "b 20 09 20 "b 20 "a 20 ") 00
+
+@rot/<eval> ( -- )
+	bios/is-ththree ?bios/<push-err-underflow>
+	bios/pop bios/pop bios/pop ROT2 ROT2 bios/<push>
+	bios/<push> !bios/<push>
+	&api =dict/rot =&<eval> "<rot> 20 "( 20 "a 20 "b 20 "c 20 09 20 "b 20 "a 20 "c 20 ") 00
+
+@cat/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	bios/pop bios/pop dict/alloc-cat !bios/<push-raw>
+	&api =dict/cat =&<eval> "<cat> 20 "( 20 "a 20 "b 20 09 20 "ab 20 ") 00
+
+@cmp/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	bios/pop bios/pop str/cmp !bios/<push-bool>
+	&api =&cmd =&<eval> "<cmp> 20 "( 20 "a 20 "b 20 09 20 "bool 20 ") 00
+	&cmd "cmp 00
+
+@and/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	( a ) bios/pop ;dict/t str/cmp
+	( b ) bios/pop ;dict/t str/cmp AND !bios/<push-bool>
+	&api =&cmd =&<eval> "<and> 20 "( 20 "a 20 "b 20 09 20 "bool 20 ") 00
+	&cmd "and 00
+
+@ora/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	( a ) bios/pop ;dict/t str/cmp
+	( b ) bios/pop ;dict/t str/cmp ORA !bios/<push-bool>
+	&api =&cmd =&<eval> "<ora> 20 "( 20 "a 20 "b 20 09 20 "bool 20 ") 00
+	&cmd "ora 00
+
+@add/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	( a ) bios/pop str/dec
+	( b ) bios/pop str/dec ADD2 dec/make !bios/<push-raw>
+	&api =&cmd =&<eval> "<add> 20 "( 20 "a 20 "b 20 09 20 "sum 20 ") 00
+	&cmd "add 00
+
+@sub/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	( a ) bios/pop str/dec
+	( b ) bios/pop str/dec SWP2 SUB2 dec/make !bios/<push-raw>
+	&api =&cmd =&<eval> "<sub> 20 "( 20 "a 20 "b 20 09 20 "dif 20 ") 00
+	&cmd "sub 00
+
+@dec/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	;&buf ,&+ptr STR2
+	bios/pop str/hex /make !bios/<push>
+
+@dec/make ( value* -- str* )
+	ORAk ?{ POP2 ;dict/zero JMP2r }
+	;&buf ,&+ptr STR2
+	OVR #80 AND #00 EQU ?/make-pos
+	[ LIT "- ] /<push>
+	#7fff AND2 #8000 SWP2 SUB2
+	( >> )
+
+@dec/make-pos ( value* -- str* )
+	#2710 [ LIT2r 00fb ]
+	&>wpd
+		DIV2k #000a DIV2k MUL2 SUB2 SWPr EQUk OVR STHkr EQU AND ?{
+			DUP LIT "0 ADD /<push>
+			INCr }
+		POP2 #000a DIV2 SWPr INCr STHkr ?/>wpd
+	POP2r POP2 POP2 ;&buf JMP2r
+
+@dec/<push> ( c -- )
+	#00 [ LIT2 &+ptr =&buf ] INC2k ,&+ptr STR2
+	STA2
+	JMP2r
+	&api =&cmd =&<eval> "<dec> 20 "( 20 "hex 20 09 20 "dec 20 ") 00
+	&cmd "dec 00
+
+@hex/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	bios/pop str/dec /make !bios/<push>
+
+@hex/make ( value* -- buf* )
+	;&buf ,&+ptr STR2
+	SWP /<push-byte>
+	/<push-byte>
+	;&buf !str/walk-zero
+
+@hex/<push-byte> ( byte -- )
+	DUP #04 SFT /<push-nibble>
+	( >> )
+	&<push-nibble> ( byte -- )
+	/chr #00 [ LIT2 &+ptr =&buf ] INC2k ,&+ptr STR2
+	STA2
+	JMP2r
+	&api =&cmd =&<eval> "<hex> 20 "( 20 "dec 20 09 20 "hex 20 ") 00
+	&cmd "hex 00
+
+@hex/chr ( hex -- char )
+	#0f AND DUP #09 GTH #27 MUL ADD LIT "0 ADD JMP2r
+
+@rsz/<eval> ( -- )
+	bios/is-thtwo ?bios/<push-err-underflow>
+	( h* ) bios/pop str/dec
+	( w* ) bios/pop str/dec SWP2k window/<set-size>
+	.Screen/width DEI2 EQU2 ROT ROT .Screen/height DEI2 EQU2 AND !bios/<push-bool>
+	&api =&cmd =&<eval> "<rsz> 20 "( 20 "w 20 "h 20 09 20 "bool 20 ") 00
+	&cmd "rsz 00
+
+@out/<eval> ( -- )
+	bios/is-empty ?bios/<push-err-underflow>
+	bios/pop !str/<print>
+	&api =&cmd =&<eval> "<out> 20 "( 20 "a 20 09 20 ") 00
+	&cmd "out 00
+
+@bye/<eval> ( -- )
+	;&callback !fade-out/<bind>
+	&api =&cmd =&<eval> "<bye> 20 "( 20 09 20 ") 00
+	&cmd "bye 00
+
+@bye/callback ( -> )
+	#800f DEO
+	BRK
+
+(
+@|Dict )
+
+@dict/<reset> ( -- )
+	;&buf ,&+ptr STR2
+	JMP2r
+
+@dict/<push-escaped> ( addr* -- addr* )
+	str/escape
+	( >> )
+
+@dict/<push> ( c -- )
+	[ LIT2 &+ptr =&buf ]
+	( clamp ) DUP2 ;&cap NEQ2 ?{ POP2 POP JMP2r }
+	INC2k ,&+ptr STR2
+	STA
+	JMP2r
+
+@dict/alloc ( str* -- str* addr* )
+	LDAk LIT "" EQU ?/alloc-string
+	LDAk LIT "( EQU ?/alloc-comment
+	[ LITr _&+ptr ] LDR2r
+	&>w
+		LDAk DUP #20 GTH ?{ POP STH2r #00 !/<push> }
+		/<push-escaped>
+		INC2 !/>w
+
+@dict/alloc-file ( name* -- addr* )
+	.File/name DEO2
+	#0001 .File/length DEO2
+	[ LITr _&+ptr ] LDR2r
+	&>s
+		;&b .File/read DEO2
+		.File/success-lb DEI ?{ STH2r #00 !/<push> }
+		[ LIT &b $1 ] /<push> !/>s
+
+@dict/alloc-cat ( a* b* -- addr* )
+	[ LIT2r =&+ptr ] LDA2r
+	&>wc1
+		LDAk DUP ?{
+			POP POP2
+			&>wc2
+				LDAk DUP ?{
+					POP POP2 STH2r #00 !/<push> }
+				/<push-escaped>
+				INC2 !/>wc2 }
+		/<push-escaped>
+		INC2 !/>wc1
+
+@dict/alloc-string ( str* -- str* addr* )
+	INC2 [ LIT2r =&+ptr ] LDA2r
+	&>was
+		LDAk DUP ?{ &end-s POP INC2 STH2r #00 !/<push> }
+		DUP LIT "" EQU ?/end-s
+		/<push-escaped>
+		INC2 !/>was
+
+@dict/alloc-comment ( str* -- str* addr* )
+	[ LIT2r =&+ptr ] LDA2r
+	&>wac
+		LDAk DUP ?{ &end-c /<push>
+			INC2 STH2r #00 !/<push> }
+		DUP LIT ") EQU ?/end-c
+		/<push-escaped>
+		INC2 !/>wac
+
+@dict/alloc-line ( str* -- str* addr* )
+	[ LIT2r =&+ptr ] LDA2r
+	&>wal
+		LDAk DUP #1f GTH ?{ POP STH2r #00 !/<push> }
+		/<push-escaped>
+		INC2 !/>wal
+
+(
+@|Font )
+
+@font/<draw-str-color> ( str* color -- )
+	,&color STR
+	( >> )
+
+@font/<draw-str> ( str* -- )
+	[ LIT2 15 -Screen/auto ] DEO
+	&>w
+		LDAk DUP ?{ POP POP2 JMP2r }
+		DUP LIT "< NEQ ?{ POP !kbd/<draw-str> }
+		/<draw-glyph>
+		INC2 !/>w
+
+@font/<draw-glyph> ( c -- )
+	DUP #0a NEQ ?{ POP !/<draw-lb> }
+	DUP #09 NEQ ?{ POP !/<draw-tab> }
+	#00 SWP #20 SUB #40 SFT2 ;&glyphs ADD2
+	( >> )
+
+@font/<draw-sprite> ( addr* -- )
+	.Screen/addr DEO2
+	[ LIT2 &color 45 -Screen/sprite ] DEO
+	JMP2r
+
+@font/<draw-lb> ( -- )
+	[ LIT2 &anchor =bios/anchor-x ] .Screen/y DEI2 #0010 ADD2 Screen/<set-pos>
+	JMP2r
+
+@font/<draw-tab> ( -- )
+	;&tab !/<draw-sprite>
+
+@font/get-width ( str* -- width* )
+	[ LIT2r 0000 ]
+	&>wgw
+		LDAk ?{ POP2 STH2r JMP2r }
+		LIT2r 0008 ADD2r INC2 !/>wgw
+
+@kbd/<draw-str> ( str* -- )
+	INC2 [ LIT2 15 -Screen/auto ] DEO
+	;&a font/<draw-sprite>
+	&>w
+		LDAk DUP ?{ POP POP2 JMP2r }
+		DUP LIT "> NEQ ?{
+			POP [ LIT2 15 -Screen/auto ] DEO
+			;&c font/<draw-sprite>
+			INC2 !font/<draw-str> }
+		/<draw-glyph>
+		INC2 !/>w
+
+@kbd/<draw-glyph> ( c -- )
+	[ LIT2 05 -Screen/auto ] DEO
+	[ LITr -Screen/x ] DEI2r .Screen/y DEI2 STH2k #0004 ADD2 .Screen/y DEO2
+	#00 SWP #20 SUB #30 SFT2 ;&glyphs ADD2 font/<draw-sprite>
+	[ LITr -Screen/y ] DEO2r
+	[ LITr -Screen/x ] DEO2r
+	[ LIT2 15 -Screen/auto ] DEO
+	;&b !font/<draw-sprite>
+
+(
+@|Loader )
+
+@loader/<load-expansion> ( -- )
+	#ff00 file/<seek>
+	;&pagelen .File/length DEO2
+	;&page .File/read DEO2
+	#0000
+	&>s
+		;&page .File/read DEO2
+		.File/success DEI2 ORA ?{ POP2 JMP2r }
+		DUP2k #80 SFT2 ,&a STR2
+		#08 SFT2 INC2 ,&p STR2
+		;&mmu-mov .System/expansion DEO2
+		INC2 !/>s
+
+	&mmu-mov [ 01 =&pagelen 0000 =&page &p $2 &a $2 ]
+
+@loader/<bind> ( path* -- )
+	;&buf ,&+ptr STR2
+	&>w
+		LDAk DUP ?{ POP POP2 !/<launch> }
+		#00 [ LIT2 &+ptr =&buf ] INC2k ,&+ptr STR2
+		STA2
+		INC2 !/>w
+
+@loader/<set-instant> ( -- )
+	[ LIT2 01 _loader/instant ] STR
+	JMP2r
+
+@loader/<launch> ( -- )
+	[ LIT &instant $1 ] ?{ ;&callback !fade-out/<bind> }
+	;&callback .Screen/vector DEO2
+	JMP2r
+
+@loader/callback ( -> )
+	;&buf file/is-oversized #00 EQU ?{ /<load-expansion> }
+	#0000 DUP2 Screen/<set-pos>
+	( | Clear screen )
+	[ LIT2 80 -Screen/pixel ] DEO
+	[ LIT2 c0 -Screen/pixel ] DEO
+	( | Blank vectors )
+	#0000 #00 &l DEO2k #10 ADD DUP [ ?/l POP POP2 ]
+	( | Blank arguments )
+	[ LIT2 00 -Console/type ] DEO
+	( | Setup file )
+	;&buf .File/name DEO2
+	#ff00 .File/length DEO2
+	( | Copy loader )
+	;&mmu .System/expansion DEO2
+	( 0pg ) #00f5 .System/expansion
+	( buf ) #0100 .File/read
+	( 1pg ) #00f1 .System/expansion !/entry
+
+	&mmu [ 01 000f 0000 =&rom 0000 00f1 ]
+	&rom [ 00ff 0000 0001 0000 0000 0000 3737 37 ]
+
+(
+@|Fade )
+
+@fade-out/<bind> ( callback* -- )
+	,&callback STR2
+	;&on-frame .Screen/vector DEO2
+	[ LIT2 00 _&f ] STR
+	JMP2r
+
+@fade-out/on-frame ( -> )
+	[ LIT &f $1 ] INCk ,&f STR
+	DUP #20 LTH ?{
+		POP [ LIT2 &callback $2 ] JMP2 }
+	( | Fill )
+	( color ) DUP #04 SFT #60 SFT
+	( addr* ) #00 ROT #0f AND #30 SFT2 ;curtain/out-short ADD2 window/<fill>
+	BRK
+
+@window/<set-size> ( w* h* -- )
+	.Screen/height DEO2
+	.Screen/width DEO2
+	input/<redraw>
+	/<update>
+	( >> )
+
+@window/<draw-spacer> ( -- )
+	#0000 #0018 Screen/<set-pos>
+	;&wave .Screen/addr DEO2
+	[ LIT2 01 -Screen/auto ] DEO
+	/get-cols SUB [ LIT2r 41 -Screen/sprite ]
+	&>l
+		DEOkr
+		INC DUP ?/>l
+	POP POP2r JMP2r
+
+@window/<update> ( -- )
+	.Screen/width DEI2 DUP2 #01 SFT2 ,&center STR2
+	DUP2 #0010 SUB2 ,&margin STR2
+	#03 SFT2 ,&cols STR2
+	.Screen/height DEI2 DUP2 #01 SFT2 ,&middle STR2
+	#03 SFT2 ,&rows STR2
+	( | Load wallpaper )
+	dir/find-wallpaper INC2k ORA ?{ POP2 JMP2r }
+	#0009 ADD2 LDA2k ,&w STR2
+	#0003 ADD2 LDA2 ,&h STR2
+	;&path #03 !icn/<draw>
+
+	&get-center [ LIT2 &center $2 ] JMP2r
+
+	&get-cols [ LIT2 &cols $2 ] JMP2r
+
+	&get-middle [ LIT2 &middle $2 ] JMP2r
+
+	&get-rows [ LIT2 &rows $2 ] JMP2r
+
+	&get-margin [ LIT2 &margin $2 ] JMP2r
+
+	&path "wallpaper [ &w "00 "x &h "00 ] ".icn 00
+
+@window/<fill> ( color addr* -- )
+	.Screen/addr DEO2
+	STH
+	[ LITr -Screen/sprite ]
+	( | Draw )
+	#0000 DUP2 Screen/<set-pos>
+	[ LIT2 01 -Screen/auto ] DEO
+	( h ) /get-cols SUB
+	( v ) /get-rows SUB
+	&>v
+		OVR
+		&>h
+			DEOkr
+			INC DUP ?/>h
+		POP
+		( | eos )
+		#0000 .Screen/x DEO2
+		.Screen/y DEI2k #0008 ADD2 ROT DEO2
+		INC DUP ?/>v
+	POP2 POP2r JMP2r
+
+(
+@|Stdlib )
+
+@manifest/scan ( but key -- fn* )
+	ORAk ?{ POP2 #ffff JMP2r }
+	,&bk STR2
+	;&dat
+	&>cat
+		DUP2 LDAk #00 SWP INC ADD2 SWP2 #0003 ADD2
+		&>opt
+			LDA2k [ LIT2 &bk $2 ] NEQ2 ?{
+				NIP2 INC2 INC2 LDA2 JMP2r }
+			#0006 ADD2 GTH2k ?/>opt
+		POP2 INC2 LDAk ?/>cat
+	POP2 #ffff JMP2r
+
+@file/get-meta ( path* -- addr* )
+	#0000 ,&port-deo2 STR2
+	( | lit2 addr* )
+	.File/name DEO2
+	#0001 .File/length DEO2
+	;&lit2 .File/read DEO2
+	#0002 .File/length DEO2
+	;&addr .File/read DEO2
+	.File/success-lb DEI ?{ #0000 JMP2r }
+	( | lit port-deo2* )
+	#0001 .File/length DEO2
+	;&lit .File/read DEO2
+	#0002 .File/length DEO2
+	;&port-deo2 .File/read DEO2
+	.File/success-lb DEI ?{ #0000 JMP2r }
+	( a ) [ LIT2 &lit2 $1 &lit $1 ] #a080 EQU2
+	( b ) [ LIT2 &port-deo2 $2 ] #0637 EQU2 AND ?{ #0000 JMP2r }
+	[ LIT2 &addr $2 ] JMP2r
+
+@file/<seek> ( addr* -- )
+	#0100 SUB2 .File/name DEI2k ROT DEO2
+	#0000 INC2k .File/length DEO2
+	&>lf
+		;&b .File/read DEO2
+		INC2 GTH2k ?/>lf
+	POP2 POP2 JMP2r
+
+@file/seek-line ( line* -- not-eof )
+	.File/name DEI2k ROT DEO2
+	ORAk ?{ POP2 #01 JMP2r }
+	#0001 .File/length DEO2
+	[ LIT2r =&bs ] [ LITr -File/read ] #0000
+	&>l
+		DEO2kr
+		[ LIT2 00 -File/success-lb ] DEI EQU ?{
+			[ LIT2 &bs $1 0a ] NEQ ?{ INC2 }
+			GTH2k ?/>l }
+	POP2 POP2 POPr POP2r .File/success-lb DEI JMP2r
+
+@file/is-dir ( path* -- t )
+	.File/name DEO2
+	#0001 .File/length DEO2
+	;&bf .File/stat DEO2
+	[ LIT2 "- &bf $1 ] EQU JMP2r
+
+@file/is-oversized ( path* -- t )
+	.File/name DEO2
+	#0004 .File/length DEO2
+	;&bufstat .File/stat DEO2
+	;&bufstat LDA LIT "? EQU JMP2r
+	&bufstat $5
+
+@file/is-text ( path* -- t )
+	.File/name DEO2
+	#0001 .File/length DEO2
+	#00
+	&>st
+		;&b .File/read DEO2
+		( | tests )
+		.File/success-lb DEI ?{ JMP2r }
+		POP #01 [ LIT &b $1 ] chr/is-ascii ?/>st
+	POP #00 JMP2r
+
+@file/exists ( path* -- t )
+	.File/name DEO2
+	#0001 .File/length DEO2
+	;&e .File/stat DEO2
+	[ LIT &e $1 ]
+	( not folder ) DUP LIT "- NEQ
+	( not missing ) SWP LIT "! NEQ AND JMP2r
+
+@file/<cpy> ( src* dst* -- )
+	.File2/name DEO2
+	#0001 .File2/length DEO2
+	.File/name DEO2
+	#0001 .File/length DEO2
+	&>s
+		;&b .File/read DEO2
+		.File/success-lb DEI ?{ JMP2r }
+		;&b .File2/write DEO2 !/>s
+
+@chr/hex ( c -- val )
+	( dec ) [ LIT "0 ] SUB DUP #09 GTH [ JMP JMP2r ]
+	( hex ) #27 SUB DUP #0a SUB #05 GTH [ JMP JMP2r ]
+	( nil ) POP #ff JMP2r
+
+@chr/n-0 ( c -- c )
+	POP #00 JMP2r
+
+@chr/t-tab ( c -- c )
+	POP #09 JMP2r
+
+@chr/n-lb ( c -- c )
+	POP #0a JMP2r
+
+@chr/t-ws ( c -- c )
+	POP #20 JMP2r
+
+@chr/is-ascii ( c -- t )
+	DUP #08 GTH SWP #7f LTH AND JMP2r
+
+@str/read-byte ( a b -- byte )
+	chr/hex SWP chr/hex #40 SFT ORA JMP2r
+
+@str/is-dir ( str* -- t )
+	/cap #0001 SUB2 LDA LIT "/ EQU JMP2r
+
+@str/is-icn ( str* -- t )
+	/cap #0004 SUB2 ;dict/icn-ext !/cmp
+
+@str/is-rom ( str* -- t )
+	/cap #0004 SUB2 ;dict/rom-ext !/cmp
+
+@str/is-wallpaper ( str* -- str* t )
+	DUP2 #0009 ;dict/wallpaper mem/cmp ?{ #00 JMP2r }
+	DUP2 /is-icn ?{ #00 JMP2r }
+	#01 JMP2r
+
+@str/<print> ( str* -- )
+	LDAk DUP ?{ POP POP2 JMP2r }
+	#18 DEO
+	INC2 !/<print>
+
+@str/escape ( addr* c -- addr* c )
+	DUP [ LIT "\ ] NEQ ?{
+		POP INC2 LDAk
+		( | handlers )
+		DUP [ LIT "0 ] EQU ?chr/n-0
+		DUP [ LIT "t ] EQU ?chr/t-tab
+		DUP [ LIT "n ] EQU ?chr/n-lb
+		DUP [ LIT "s ] EQU ?chr/t-ws }
+	JMP2r
+
+@str/is-word ( str* -- t )
+	&>wiw
+		LDAk DUP ?{ POP POP2 #01 JMP2r }
+		#20 GTH ?{ POP2 #00 JMP2r }
+		INC2 !/>wiw
+
+@str/eol ( str* -- eol* )
+	&>we
+		LDAk DUP ?{ POP JMP2r }
+		#0a NEQ ?{ JMP2r }
+		INC2 !/>we
+
+@str/cap ( str* -- end* )
+	LDAk ?{ JMP2r }
+	INC2 !/cap
+
+@str/len ( str* -- len* )
+	STH2k /cap STH2r SUB2 JMP2r
+
+@str/cmp ( a* b* -- f )
+	STH2
+	&>wc
+		LDAk ?{ &d LDA LDAr STHr EQU JMP2r }
+		LDAk LDAkr STHr NEQ ?/d
+		INC2 INC2r !/>wc
+
+@str/hex ( str* -- value* )
+	[ LIT2r 0000 ]
+	&>wh
+		[ LITr 40 ] SFT2r LDAk chr/hex [ LITr 00 ] STH
+		ADD2r INC2 LDAk ?/>wh
+	POP2 STH2r JMP2r
+
+@str/dec ( str* -- val* )
+	LDAk [ LIT "- ] NEQ ?/dec-unsigned
+	INC2 /dec-unsigned #0000 SWP2 SUB2 JMP2r
+
+@str/dec-unsigned ( str* -- val* )
+	[ LIT2r 0000 ] !{
+
+	&>ldec
+		[ LITr 00 ] STH
+		MUL2r [ LITr 00 ] STH
+		ADD2r INC2 }
+	( str* . val* ) LDAk [ LIT "0 ] SUB #0a LTHk ?/>ldec
+	POP2 POP2 STH2r JMP2r
+
+@str/walk-ws ( str* -- str* )
+	&>ws
+		LDAk ?{ JMP2r }
+		LDAk #20 GTH ?{ INC2 LDAk ?/>ws }
+	JMP2r
+
+@str/walk-zero ( str* -- str* )
+	&>wz
+		LDAk ?{ JMP2r }
+		LDAk LIT "0 NEQ ?{ INC2 LDAk ?/>wz }
+	JMP2r
+
+@str/seg ( str* seg* -- bool )
+	DUP2 /len SWP2 !mem/cmp
+
+@mem/cmp ( a* length* b* -- t )
+	STH2
+	OVR2 ADD2 SWP2
+	&>l
+		EQU2k ?{
+			LDAk LDAkr STHr NEQ ?{ INC2 INC2r !/>l } }
+	POP2r EQU2 JMP2r
+
+@date/make ( -- str* )
+	;&buf DUP2 ,&+ptr STR2
+	( | Make string )
+	[ LIT2 00 -DateTime/dotw ] DEI #20 SFT ;dict/days ADD2 /<push-str>
+	[ LIT ", ] /<push>
+	#20 /<push>
+	[ LIT2 00 -DateTime/day ] DEI /<push-dec>
+	#20 /<push>
+	[ LIT2 00 -DateTime/month ] DEI #20 SFT ;dict/months ADD2 /<push-str>
+	#20 /<push>
+	.DateTime/year DEI2 !/<push-dec>
+
+@date/<push-dec> ( short* -- )
+	#2710 [ LIT2r 00fb ]
+	&>wpd
+		DIV2k #000a DIV2k MUL2 SUB2 SWPr EQUk OVR STHkr EQU AND ?{ DUP /<push-digit>
+			INCr }
+		POP2 #000a DIV2 SWPr INCr STHkr ?/>wpd
+	POP2r POP2 POP2 JMP2r
+
+@date/<push-digit> ( d -- )
+	LIT "0 ADD
+	( >> )
+
+@date/<push> ( c -- )
+	#00 [ LIT2 &+ptr =&buf ] INC2k ,&+ptr STR2
+	STA2
+	JMP2r
+
+@date/<push-str> ( str* -- )
+	&>w
+		LDAk DUP ?{ POP POP2 JMP2r }
+		/<push>
+		INC2 !/>w
+
+@time/make ( -- str* )
+	;&buf DUP2 ,&+ptr STR2
+	( | Make string )
+	.DateTime/hour DEI /<push-dec>
+	LIT ": /<push>
+	.DateTime/minute DEI /<push-dec>
+	LIT ": /<push>
+	.DateTime/second DEI !/<push-dec>
+
+@time/<push-dec> ( u8 -- )
+	DUP #0a DIV /<push-digit>
+	#0a DIVk MUL SUB
+	( >> )
+
+@time/<push-digit> ( d -- )
+	LIT "0 ADD
+	( >> )
+
+@time/<push> ( c -- )
+	#00 [ LIT2 &+ptr =&buf ] INC2k ,&+ptr STR2
+	STA2
+	JMP2r
+
+@banner/<request> ( -- )
+	[ LIT2 00 _&skip ] STR
+	JMP2r
+
+@banner/<draw> ( -- )
+	;bios/anchor-x DUP2 ,&x STR2
+	.Screen/y DEI2 #0018 ADD2 DUP2 ,&y STR2
+	Screen/<set-pos>
+	sel/has-meta ?meta/<draw>
+	[ LIT2 66 -Screen/auto ] DEO
+	;&asset .Screen/addr DEO2
+	[ LIT2 45 -Screen/sprite ] DEOk DEO
+	.Screen/vector DEI2 ORA ?{
+		[ LIT &skip 00 ] ?{
+			[ LIT2 00 _&f ] STR
+			[ LIT2 01 _&skip ] STR
+			;&on-frame .Screen/vector DEO2 } }
+	JMP2r
+
+@banner/on-frame ( -> )
+	[ LIT &f $1 ] INCk ,&f STR
+	DUP #20 LTH ?{
+		POP #0000 .Screen/vector DEO2
+		BRK }
+	#01 SFT [ LIT2 &x $2 ] [ LIT2 &y $2 ] Screen/<set-pos>
+	[ LIT2 66 -Screen/auto ] DEO
+	;&asset .Screen/addr DEO2
+	[ LIT2 45 -Screen/sprite ] DEOk DEO
+	( | mask )
+	.Screen/y DEI2k #0010 SUB2 ROT DEO2
+	[ LIT2 15 -Screen/auto ] DEO
+	#0010 ROT SUB #30 SFT2 ;curtain/out ADD2 .Screen/addr DEO2
+	[ LIT2 40 -Screen/sprite ] DEOk DEOk DEOk DEOk DEOk DEOk DEO
+	BRK
+
+@banner/<load> ( -- )
+	#0070 .File/length DEO2
+	;&asset .File/read DEO2
+	JMP2r
+
+@meta/<load> ( addr* -- )
+	file/<seek>
+	;&buflen .File/length DEO2
+	;&buf .File/read DEO2
+	;&body str/cap INC2
+	( | parse fields )
+	[ LIT2 00 _&has-icon ] STR
+	LDAk #00 SWP #0003 MUL2 OVR2 INC2 ADD2 SWP2 INC2
+	&>l
+		LDAk #83 NEQ ?{
+			( | Load icon )
+			INC2k LDA2 file/<seek>
+			#0090 .File/length DEO2
+			;&icon .File/read DEO2
+			[ LIT2 90 -File/success-lb ] DEI EQU ,&has-icon STR }
+		#0003 ADD2 GTH2k ?/>l
+	POP2 POP2 JMP2r
+
+@meta/<draw> ( -- )
+	/<draw-icon>
+	.Screen/x DEI2 #0020 ADD2 .Screen/y DEI2 #0018 SUB2 Screen/<set-pos>
+	#0028 ;font/anchor STA2
+	;&body #41 font/<draw-str-color>
+	;bios/anchor-x ;font/anchor STA2
+	JMP2r
+
+@meta/<draw-icon> ( -- )
+	[ LIT &has-icon $1 ] ?{
+		;&no-icon .Screen/addr DEO2
+		[ LIT2 22 -Screen/auto ] DEO
+		[ LIT2 c5 -Screen/sprite ] DEOk DEOk DEO
+		JMP2r }
+	;&icon .Screen/addr DEO2
+	[ LIT2 26 -Screen/auto ] DEO
+	[ LIT2 c5 -Screen/sprite ] DEOk DEOk DEO
+	JMP2r
+
+@theme/<reset> ( -- )
+	#f0a8 #f0ec #f0b9
+	( >> )
+
+@theme/<set> ( r* g* b* -- )
+	.System/b DEO2
+	.System/g DEO2
+	.System/r DEO2
+	JMP2r
+
+@theme/<load> ( -- )
+	;&path .File/name DEO2
+	#0002 .File/length DEO2
+	;&r .File/read DEO2
+	;&g .File/read DEO2
+	;&b .File/read DEO2
+	.File/success-lb DEI ?{ !/<reset> }
+	banner/<load>
+	[ LIT2 &r $2 ] [ LIT2 &g $2 ] [ LIT2 &b $2 ] !/<set>
+
+	&path ".theme 00
+
+( 
+@|Assets )
+
+@dict/m_pc "M/PC 00
+	&ready2 "Type 20 "<cmd> 20 "to 20 "see 20 "options. 00
+	&home-path "./ 00
+	&sel-prev "Selection 20 "Previous 00
+	&sel-next "Selection 20 "Next 00
+	&sel-pick "Pick 20 "Selection 00
+	&clear "Clear 20 "Input 00
+	&directory "Directory 00
+	&wallpaper "wallpaper 00
+	&input "Input 00
+	&eval "Run 00
+	&eof "eof 00
+	&scroll-up "Scroll 20 "Up 00
+	&scroll-down "Scroll 20 "Down 00
+	&eval-partial "Non-Destructive 20 "Run 00
+	&out-path "../ 00
+	&icn-ext ".icn 00
+	&rom-ext ".rom 00
+	&dir "dir 00
+	&mov "mov 00
+	&run "run 00
+	&txt "txt 00
+	&put "put 00
+	&era "era 00
+	&ren "ren 00
+	&get "get 00
+	&cmd "cmd 00
+	&len "len 00
+	&dup "dup 00
+	&ovr "ovr 00
+	&swp "swp 00
+	&rot "rot 00
+	&pop "pop 00
+	&now "now 00
+	&cat "cat 00
+	&icn "icn 00
+	&cpy "cpy 00
+	&zero "0 00
+	&t "<true> 00
+	&f "<false> 00
+	&ok "<ok> 00
+	&err-underflow "<underflow> 00
+	&err-missing "<missing> 00
+	&err-binary "<binary> 00
+	&months [
+	"Jan $1 "Feb $1 "Mar $1 "Apr $1 "May $1 "Jun $1 "Jul $1 "Aug $1
+	"Sep $1 "Oct $1 "Nov $1 "Dec $1 ]
+	&days [
+	"Sun $1 "Mon $1 "Tue $1 "Wed $1 "Thu $1 "Fri $1 "Sat $1 ]
+
+@window/wave [ 0000 0000 0070 8807 ]
+
+@input/caret [ 0020 2020 2020 2020 2020 2020 2020 0000 ]
+
+@curtain/out [8
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0002 0000 0000 0000 0002 ]
+	&out-short [8
+	0000 0022 0000 0022 0000 0022 0000 0022
+	0088 0022 0088 0022 0088 0022 0088 0022
+	00aa 00aa 00aa 00aa 00aa 00aa 00aa 00aa
+	44aa 11aa 44aa 11aa 44aa 11aa 44aa 11aa
+	aa55 aa55 aa55 aa55 aa55 aa55 aa55 aa55
+	aa77 aadd aa77 aadd aa77 aadd aa77 aadd
+	aaff aaff aaff aaff aaff aaff aaff aaff
+	bbff eeff bbff eeff bbff eeff bbff eeff
+	bbff ffff bbff ffff bbff ffff bbff ffff
+	ffff ffff ffff ffff ffff ffff ffff ffff ]
+
+@appicon [8
+	0000 0000 0000 0001 0000 0000 0000 0000
+	0000 0000 0000 0080 0000 0000 0000 0000
+	0000 0000 0000 0038 0000 0000 0000 0000
+	070f 0f1f 1f0f 0f07 0000 0000 0000 0000
+	e0f0 f0f8 f8f1 f1e3 0000 0000 0000 0000
+	3870 70e0 e0c0 c080 0000 0000 0000 0000
+	0100 0000 0000 0000 0000 0000 0000 0000
+	8300 0000 0000 0000 0000 0000 0000 0000
+	8000 0000 0000 0000 0000 0000 0000 0000 ]
+
+@banner/asset [8
+	000f 3f7f 7fff ffff 00c0 f0f8 f8fc fcfc
+	000e 0e1c 1c38 3870 00ff ffff e0e0 e0e0
+	00f0 fcfc 1e0e 0e1e 001f 7f7f f0e0 e0e0
+	00f0 fcfc 1e0e 0e00 ffff ff7f 7f3f 0f00
+	fcfc fcf9 f9f3 c300 70e0 e0c0 c080 8000
+	ffff ffe0 e0e0 e000 fcfc f000 0000 0000
+	e0e0 e0f0 7f7f 1f00 000e 0e1e fcfc f000 ]
+
+@meta/no-icon [ cccc 3333 cccc 3333 ]
+
+@font/glyphs [8
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 1010 1020 2020 2000 4040 0000 0000
+	0000 0050 5000 0000 0000 0000 0000 0000
+	0000 0024 24fc 4848 fc90 9000 0000 0000
+	0000 083c 4a50 5030 2828 48f0 4000 0000
+	0000 1129 2a14 0810 2854 9488 0000 0000
+	0000 1824 2428 3052 9488 8876 0000 0000
+	0000 0040 4000 0000 0000 0000 0000 0000
+	0004 0808 1010 2020 2020 2010 1000 0000
+	0020 2010 1010 1010 2020 4040 8000 0000
+	0000 0024 187e 1824 0000 0000 0000 0000
+	0000 0000 0010 107c 1010 0000 0000 0000
+	0000 0000 0000 0000 0000 0020 2040 0000
+	0000 0000 0000 007c 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0010 0000 0000
+	0001 0102 0404 0810 2020 4080 8000 0000
+	0000 1824 4444 8484 8888 9060 0000 0000
+	0000 0818 2810 1010 1020 2070 0000 0000
+	0000 1c22 0204 0810 2040 80f8 0000 0000
+	0000 1c22 0204 1804 0404 8870 0000 0000
+	0000 0408 0810 2848 fc10 1010 0000 0000
+	0000 3e20 2078 4404 0404 8870 0000 0000
+	0000 0c10 2040 58e4 8484 8870 0000 0000
+	0000 3e02 0408 1010 2020 4040 0000 0000
+	0000 1c22 4244 3844 8484 8870 0000 0000
+	0000 1c22 4242 463c 0408 1060 0000 0000
+	0000 0000 0000 4000 0000 0040 0000 0000
+	0000 0000 0000 2000 0000 0020 2040 0000
+	0000 0000 0008 1020 4020 1008 0000 0000
+	0000 0000 0000 007c 0000 7c00 0000 0000
+	0000 0000 0040 2010 0810 2040 0000 0000
+	0000 003c 4242 0408 1010 0010 0000 0000
+	0000 0000 1e21 4e52 524f 201c 0000 0000
+	0000 0c0c 1414 2424 7c44 8484 0000 0000
+	0000 1e11 1122 3c22 2242 4478 0000 0000
+	0000 0e11 2020 4040 4040 4438 0000 0000
+	0000 3c22 2242 4242 4484 88f0 0000 0000
+	0000 1f10 1020 3c20 2040 407c 0000 0000
+	0000 1f10 1020 3c20 2040 4040 0000 0000
+	0000 0e11 2020 404e 4244 443c 0000 0000
+	0000 2121 2142 7e42 4284 8484 0000 0000
+	0000 1f04 0408 0808 0810 107c 0000 0000
+	0000 0702 0204 0404 0488 8870 0000 0000
+	0000 2122 2448 7050 4888 8484 0000 0000
+	0000 1010 1020 2020 2040 407c 0000 0000
+	0000 2121 3356 5a5a 4284 8484 0000 0000
+	0000 2121 3152 524a 4a8c 8484 0000 0000
+	0000 0e11 2121 4141 4242 4438 0000 0000
+	0000 1e11 1121 223c 2040 4040 0000 0000
+	0000 0e11 2121 4141 4252 5438 0600 0000
+	0000 1e11 1122 3c30 2848 4444 0000 0000
+	0000 1e21 2020 1008 0404 8478 0000 0000
+	0000 7f08 0810 1010 1020 2020 0000 0000
+	0000 2121 4142 4242 8284 8478 0000 0000
+	0000 2121 2222 2424 2828 3030 0000 0000
+	0000 2121 2122 2a5a 6a6c 4444 0000 0000
+	0000 2121 1214 1818 2848 8484 0000 0000
+	0000 2121 1212 1408 0810 1010 0000 0000
+	0000 3f01 0204 0810 2040 80fc 0000 0000
+	001e 1010 1020 2020 2040 4040 7800 0000
+	0040 4040 2020 2010 1010 0808 0800 0000
+	0078 0808 0810 1010 1020 2020 e000 0000
+	0000 0020 5000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 00f8 0000 0000
+	0000 0040 2000 0000 0000 0000 0000 0000
+	0000 0000 001e 2222 4444 4c32 0000 0000
+	0000 3010 102c 3222 2244 4438 0000 0000
+	0000 0000 001c 2220 4040 4438 0000 0000
+	0000 0101 011e 2222 4244 4c32 0000 0000
+	0000 0000 001c 2224 7840 4438 0000 0000
+	0000 0304 0808 3e08 1010 1010 2020 4000
+	0000 0000 001e 2222 4444 4c34 0848 7000
+	0000 3010 102e 3222 2244 4446 0000 0000
+	0000 0404 000c 1808 0810 121c 0000 0000
+	0000 0404 000c 1808 0808 1010 1020 c000
+	0000 1010 102e 3222 3c48 4442 0000 0000
+	0000 0c04 0408 0808 0810 1418 0000 0000
+	0000 0000 00b7 4949 4992 9293 0000 0000
+	0000 0000 006e 3222 2244 4446 0000 0000
+	0000 0000 001c 2222 4244 4438 0000 0000
+	0000 0000 002c 7222 2244 4478 4080 8000
+	0000 0000 001a 2622 4244 4c34 0808 0800
+	0000 0000 0016 3a10 1020 2020 0000 0000
+	0000 0000 001c 2220 1804 4438 0000 0000
+	0000 0008 083e 0810 1010 2418 0000 0000
+	0000 0000 0062 2222 4244 4c32 0000 0000
+	0000 0000 0062 2222 2224 2830 0000 0000
+	0000 0000 0061 2141 495a 6644 0000 0000
+	0000 0000 0031 120c 0818 2446 0000 0000
+	0000 0000 0062 2222 4444 4c34 0848 7000
+	0000 0000 001d 2204 0810 2052 0c00 0000
+	0006 0808 0810 6010 1020 2020 1800 0000
+	0000 1010 1020 2020 2040 4040 0000 0000
+	0030 0808 0810 100c 1020 2020 c000 0000
+	0000 0000 0000 0032 4c00 0000 0000 0000 ]
+	&tab [ 0000 0000 0008 0c7e 0c08 0000 0000 0000 ]
+
+@kbd/glyphs [8
+	0000 0000 0000 0000 0808 1010 1000 2000
+	2448 0000 0000 0000 0a14 7e28 fc50 a000
+	083c 5238 14a8 7020 44a8 4810 242a 4400
+	1824 4862 9c88 7000 1020 0000 0000 0000
+	0408 1020 2020 1008 2010 0808 0810 2040
+	0050 2050 0000 0000 0000 2020 f820 2000
+	0000 0000 0010 1020 0000 0000 7c00 0000
+	0000 0000 0000 1000 0808 1010 2020 4040
+	0c12 2242 4448 3000 0c04 0808 0810 1000
+	0c12 0408 1020 7800 0e02 0418 0448 3000
+	060a 1424 3e08 0800 1e20 3804 0448 3000
+	0c12 2038 4448 3000 3e04 0810 2040 4000
+	0c12 2418 2448 3000 0c12 221c 0448 3000
+	0000 1000 0010 0000 0000 1000 0010 1020
+	0000 0810 2010 0800 0000 7c00 7c00 0000
+	0000 2010 0810 2000 3844 0418 2000 4000
+	0c12 2e54 5844 3000 1c22 2244 7c88 8800
+	3c22 4478 4488 f000 1c22 4040 8088 7000
+	3c22 4244 4488 f000 3e20 4078 4080 f800
+	3e20 4078 4080 8000 1c22 4040 9c88 7000
+	2222 447c 4488 8800 1c08 1010 2020 7000
+	0e04 0808 1090 6000 2224 4870 5090 8800
+	1010 2020 2040 7c00 2236 4c44 4488 8800
+	2222 6454 4c88 8800 1c22 4244 8488 7000
+	3c22 4478 4080 8000 1c22 4244 9488 7400
+	3c22 4478 4488 8800 1c22 4038 0488 7000
+	7c10 2020 2040 4000 2222 4444 8888 7000
+	4444 4448 5020 2000 2222 4454 a8a8 5000
+	2224 2810 2848 8800 4448 5020 2040 4000
+	3e04 0810 2040 f800 0c08 0810 1020 2030
+	2020 2010 1008 0808 1808 1010 1020 2060
+	2050 8800 0000 0000 0000 0000 0000 f800
+	4020 1000 0000 0000 0000 1a24 4448 3400
+	1020 3824 4448 3000 0000 1824 4048 3000
+	0202 1a24 4448 3400 0000 1824 7840 3000
+	0608 3c10 1020 20c0 0000 1a24 4838 9060
+	1020 2834 2448 4800 0400 1808 1028 3000
+	0400 1808 1010 20c0 1020 2834 2850 4800
+	1808 1010 2028 3000 0000 542a 2a54 5400
+	0000 2c32 2244 4400 0000 1824 4448 3000
+	0000 2c12 2458 4040 0000 1a24 4c34 0408
+	0000 2834 2040 4000 0000 1824 1048 3000
+	0810 3c10 2028 3000 0000 2424 4858 2800
+	0000 6424 4850 6000 0000 622a 5454 2800
+	0000 2458 1034 4800 0000 2424 4838 9060
+	0000 3448 1024 5800 0c10 1060 2040 4020
+	1010 1010 1010 1010 0804 0408 0c10 1060
+	0000 0032 4c00 0000 0000 0000 0000 0000 ]
+	&a [ 0000 0001 0204 0810 1008 0402 0100 0000 ]
+	&b [ 0000 ff00 0000 0000 0000 0000 00ff 0000 ]
+	&c [ 0000 0080 4020 1008 0810 2040 8000 0000 ]
+
+(
+@|Buffer )
+
+@len/buf &hb $2 &lb $2 00
+
+@dec/buf $6
+
+@hex/buf $6
+
+@icn/buf $8
+
+@date/buf $12
+
+@time/buf $a
+
+@symbol/buf $20
+
+@loader/page $&pagelen
+
+@meta/buf $1 &body $&buflen
+	&cap 0000 &icon $90
+
+@path/buf $&buflen
+	&cap 0000
+
+@dir/buf $&buflen 0000
+
+@bios/buf $&buflen
+	&cap 0000
+
+@dict/buf
+
+
+
