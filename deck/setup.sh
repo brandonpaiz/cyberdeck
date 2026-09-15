@@ -194,6 +194,13 @@ done
 run systemctl daemon-reload
 for u in "${ENABLE[@]}"; do
 	systemctl is-enabled -q "$u" 2>/dev/null || run systemctl enable -q "$u"
+	# Background services start now; the tty1 kiosk waits for a reboot (or an
+	# explicit `systemctl start cyberdeck`) so a console login is not cut off.
+	if [[ $u != cyberdeck.service ]] && ! systemctl is-active -q "$u" 2>/dev/null; then
+		run systemctl start "$u"
+	elif [[ $u != cyberdeck.service ]]; then
+		run systemctl restart "$u"
+	fi
 done
 if systemctl is-enabled -q getty@tty1.service 2>/dev/null; then
 	note "disabling getty on tty1 (tty2 stays available)"
@@ -208,6 +215,6 @@ fi
 log "done"
 note "disk:        $DISK"
 note "reticulum:   $RNS_DIR/config"
-note "next:        sudo reboot  (Potato on tty1, Ctrl+Alt+F2 for a shell)"
+note "next:        sudo reboot, or sudo systemctl start cyberdeck  (Potato on tty1, Ctrl+Alt+F2 for a shell)"
 note "logs:        journalctl -u cyberdeck -u rnsd -u cyberdeck-bridge -f"
 note "diagnose:    deck/check.sh"

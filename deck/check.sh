@@ -31,6 +31,7 @@ done
 ls /sys/class/drm/ | grep -E 'card[0-9]+-' | while read -r c; do printf '%-20s %s\n' "$c" "$(cat /sys/class/drm/$c/status 2>/dev/null)"; done
 printf 'GLES libs: '; ls /usr/lib/*/libGLESv2.so.2 /usr/lib/*/dri/panfrost_dri.so 2>/dev/null | tr '\n' ' '; echo
 journalctl -u cyberdeck -b --no-pager -q | grep -iE 'sdl|render|error|could not' | tail -5
+systemctl is-active -q cyberdeck || echo "cyberdeck.service is not running: sudo systemctl start cyberdeck (or reboot)"
 
 hr "RNode"
 ls -l /dev/serial/by-id/ 2>/dev/null || echo "no USB serial devices"
@@ -49,10 +50,8 @@ if [[ "${1:-}" == "--rnode" && -x $VENV/bin/rnodeconf ]]; then
 	fi
 fi
 
-hr "bridge"
-ls -la "/home/$DECK_USER/.cyberdeck" 2>/dev/null
-ls "/home/$DECK_USER/deck/lxmf" 2>/dev/null
-cat "/home/$DECK_USER/deck/build.log" 2>/dev/null | tail -3
+hr "bridge and disk (as $DECK_USER)"
+sudo -u "$DECK_USER" sh -c 'ls -la ~/.cyberdeck; echo "disk:"; ls ~/deck; echo "lxmf:"; ls ~/deck/lxmf; echo "build.log:"; tail -3 ~/deck/build.log' 2>&1
 
 hr "recent logs"
 journalctl -u cyberdeck -u rnsd -u cyberdeck-bridge -b --no-pager -q -n 25
