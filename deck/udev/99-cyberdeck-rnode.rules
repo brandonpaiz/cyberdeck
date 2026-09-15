@@ -1,0 +1,8 @@
+# RNode over USB. Keep ModemManager off the port (it probes ttyACM devices
+# and can leave an ESP32-S3 RNode wedged), and give the deck user access.
+# 303a = Espressif (ESP32-S2/S3 native USB), 10c4 = Silicon Labs CP210x,
+# 1a86 = WCH CH340/CH9102 (common USB-serial chips on RNode boards).
+ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="303a", ENV{ID_MM_DEVICE_IGNORE}="1"
+ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="10c4", ENV{ID_MM_DEVICE_IGNORE}="1"
+ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1a86", ENV{ID_MM_DEVICE_IGNORE}="1"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", GROUP="dialout", MODE="0660"

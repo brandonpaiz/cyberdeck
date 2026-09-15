@@ -50,7 +50,8 @@ sudo reboot
 ```
 
 The Pi comes up in Potato on tty1. `Ctrl+Alt+F2` gives a login shell and
-SSH keeps working. Rerun `setup.sh` after every `git pull`.
+SSH keeps working. Rerun `setup.sh` after every `git pull`. `deck/check.sh`
+prints service, display and RNode diagnostics in one go.
 
 ## Layout
 

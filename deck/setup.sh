@@ -48,7 +48,9 @@ as_user() { # as_user USER CMD...
 
 # ---------------------------------------------------------------- packages
 log "packages"
-PKGS=(build-essential make libsdl2-dev python3-venv python3-pip rsync sudo)
+# libgl1-mesa-dri carries the Panfrost GLES driver for the Mali G31, so uxn2
+# gets an accelerated SDL renderer on KMSDRM instead of the software fallback.
+PKGS=(build-essential make libsdl2-dev python3-venv python3-pip rsync sudo libgl1-mesa-dri libgles2 libegl1)
 MISSING=()
 for p in "${PKGS[@]}"; do
 	dpkg -s "$p" >/dev/null 2>&1 || MISSING+=("$p")
@@ -147,6 +149,14 @@ if [[ -n ${DISPLAY_NAME:-} && ! -f $DECK_HOME/.cyberdeck/name ]]; then
 	fi
 fi
 
+# -------------------------------------------------------------------- udev
+log "udev rule for the RNode (keeps ModemManager off it)"
+if ! cmp -s "$REPO/deck/udev/99-cyberdeck-rnode.rules" /etc/udev/rules.d/99-cyberdeck-rnode.rules; then
+	run install -m 644 "$REPO/deck/udev/99-cyberdeck-rnode.rules" /etc/udev/rules.d/99-cyberdeck-rnode.rules
+	run udevadm control --reload-rules
+	run udevadm trigger --subsystem-match=usb --subsystem-match=tty
+fi
+
 # ----------------------------------------------------------------- sudoers
 log "sudoers (poweroff/reboot from a ROM)"
 SUDO_TMP=$(mktemp)
@@ -197,3 +207,4 @@ note "disk:        $DISK"
 note "reticulum:   $RNS_DIR/config"
 note "next:        sudo reboot  (Potato on tty1, Ctrl+Alt+F2 for a shell)"
 note "logs:        journalctl -u cyberdeck -u rnsd -u cyberdeck-bridge -f"
+note "diagnose:    deck/check.sh"

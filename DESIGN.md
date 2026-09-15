@@ -547,15 +547,26 @@ Each stage is one branch and one review.
    device, the protocol and a two-process LXMF roundtrip.
 3. **Chat ROM and dev harness.** `chat.tal`, `run-dev.sh`, two decks on a
    laptop. Done in the repo; still to verify against Sideband over WiFi.
-4. **RNode on the deck.** Config rendering, port detection, end-to-end over
-   LoRa.
+4. **RNode on the deck.** Config rendering, port detection and the udev
+   rule are in place; needs the new SD card provisioned and a peer to talk
+   to. `deck/check.sh --rnode` queries the RNode firmware to confirm the
+   board is flashed and on the expected band.
 5. **NomadNet** as sketched in section 11.
 
 ## 13. Open questions and risks
 
-- **GLES on your Armbian image.** Check `ls /dev/dri` and `uname -r` on
-  the Pi. Vendor 6.1 kernels and mainline "edge" kernels differ in
-  Panfrost support; the software fallback covers both, at some CPU cost.
+- **GLES on your Armbian image.** Settled by the hardware report: kernel
+  `6.18.51-current-sunxi64` (mainline) with `/dev/dri/card0`, `card1` and
+  `renderD128`, so both the sun4i display engine and the Panfrost GPU are
+  present. SDL's KMSDRM backend probes for the card that has connectors.
+  `setup.sh` installs Mesa's GLES libraries so the accelerated renderer
+  can work; the software fallback stays as insurance. `deck/check.sh`
+  prints which card has connectors and what uxn2 logged.
+- **The RNode is an ESP32-S3 with native USB** (Espressif USB JTAG/serial,
+  by-id path stable, appears as `/dev/ttyACM*`). ModemManager probes ACM
+  ports and can wedge such a device, so `setup.sh` installs a udev rule
+  marking Espressif, Silicon Labs and WCH USB-serial devices as
+  `ID_MM_DEVICE_IGNORE`.
 - **Left is missing.** Potato's Text app cannot edit, so until Left's
   source is added to `roms/`, editing `.tal` on the deck means SSH. The
   build pipeline itself works without it.
@@ -563,8 +574,6 @@ Each stage is one branch and one review.
   (`roms/potato/etc/nasu.rom`), and Orca, Dexe and Bifurcan are not in the
   repo yet. Each is one line in the top-level makefile once its source
   is committed.
-- **RNode board.** Port detection assumes a USB serial RNode. A BLE RNode
-  is supported by RNS (`port = ble://…`) but changes the udev story.
 - **LoRa timing.** At SF8/125 kHz a direct LXMF delivery takes several
   seconds and an announce is heard only when a peer sends one. The ROM
   should show "sending" states plainly rather than look frozen.
