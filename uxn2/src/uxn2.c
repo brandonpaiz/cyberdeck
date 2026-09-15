@@ -1349,6 +1349,11 @@ emu_init(void)
 	if(emu_window == NULL)
 		return !fprintf(stderr, "sdl_window: %s\n", SDL_GetError());
 	emu_renderer = SDL_CreateRenderer(emu_window, -1, SDL_RENDERER_ACCELERATED);
+	if(emu_renderer == NULL) {
+		/* cyberdeck: no GLES on this KMSDRM display, fall back to software */
+		fprintf(stderr, "sdl_renderer: %s, falling back to software\n", SDL_GetError());
+		emu_renderer = SDL_CreateRenderer(emu_window, -1, 0);
+	}
 	if(emu_renderer == NULL)
 		return !fprintf(stderr, "sdl_renderer: %s\n", SDL_GetError());
 	SDL_SetRenderDrawColor(emu_renderer, 0x00, 0x00, 0x00, 0xff);

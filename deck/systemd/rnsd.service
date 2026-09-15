@@ -1,0 +1,13 @@
+[Unit]
+Description=Reticulum Network Stack daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=deck
+ExecStart=/opt/cyberdeck/venv/bin/rnsd --service
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

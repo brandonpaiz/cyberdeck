@@ -1,0 +1,9 @@
+[Unit]
+Description=Assemble the deck's src/*.tal into ROMs with Drifblim
+
+[Service]
+Type=oneshot
+User=deck
+WorkingDirectory=/home/deck/deck/src
+# The log lives one level up so writing it does not retrigger the path unit.
+ExecStart=/bin/sh -c 'make UXN2=/usr/local/bin/uxn2 > ../build.log 2>&1'

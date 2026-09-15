@@ -1,0 +1,9 @@
+[Unit]
+Description=Assemble ROMs when a .tal file in the deck's src/ changes
+
+[Path]
+PathChanged=/home/deck/deck/src
+Unit=cyberdeck-build.service
+
+[Install]
+WantedBy=multi-user.target

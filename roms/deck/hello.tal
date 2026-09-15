@@ -1,0 +1,34 @@
+( hello.tal
+  A starting point for your own ROMs. Edit it in src/ on the deck and
+  hello.rom reappears on the desktop a moment later. Escape halts, which
+  brings the deck back to Potato. )
+
+|00 @System &vector $2 &expansion $2 &wst $1 &rst $1 &metadata $2 &r $2 &g $2 &b $2 &debug $1 &state $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|80 @Controller &vector $2 &button $1 &key $1
+
+|0100
+
+@on-reset ( -> )
+	( theme ) #0f7e .System/r DEO2 #0fe6 .System/g DEO2 #0fc6 .System/b DEO2
+	( clear ) #0000 .Screen/x DEO2 #0000 .Screen/y DEO2 #80 .Screen/pixel DEO
+	;on-button .Controller/vector DEO2
+	;message #0020 #0020 <draw-str>
+	BRK
+
+@on-button ( -> )
+	.Controller/key DEI #1b NEQ ?{ #80 .System/state DEO }
+	BRK
+
+@<draw-str> ( str* x* y* -- )
+	.Screen/y DEO2 .Screen/x DEO2
+	#01 .Screen/auto DEO
+	&loop ( -- )
+		LDAk #00 SWP #30 SFT2 ;font-atari8 ADD2 .Screen/addr DEO2
+		#01 .Screen/sprite DEO
+		INC2 LDAk ?&loop
+	POP2 JMP2r
+
+@message "Hello, 20 "cyberdeck. 00
+
+~lib/atari8.tal

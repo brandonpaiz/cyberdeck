@@ -211,35 +211,46 @@ Potato fullscreen with keyboard working, `Ctrl+Alt+F2` gives a shell, and
 
 ## 4. Writing and assembling ROMs on the deck
 
-Drifblim already runs inside uxn2 (`bin/drifblim.rom` is built from the
-bundled `drifblim.rom.txt`), and uxn2 stays headless when a ROM halts
-before setting a screen vector. So assembling on the Pi is:
+What Potato's source settled (read after the sources landed):
+
+- Potato launches a ROM by copying it over memory with a zero-page loader
+  (`load-rom` in `assets.tal`). No arguments reach the launched ROM, and
+  there is no way back except the ROM halting, which makes uxn2 exit and
+  systemd restart Potato. That matches the kiosk design.
+- Potato's built-in Text app is a viewer, not an editor. Editing `.tal`
+  on the deck needs Left, whose source is not in the repo yet.
+- The "assemble from Potato" wrapper idea is dropped: Drifblim needs file
+  arguments and Potato cannot pass them.
+
+So assembling on the deck is automatic. Drifblim runs inside uxn2
+headlessly (uxn2 never opens a window for a ROM that halts before setting
+a screen vector):
 
 ```
 uxn2 drifblim.rom src/foo.tal foo.rom
 ```
 
-Two ways to trigger that, both provided:
+A systemd path unit (`cyberdeck-build.path`) watches `~/deck/src`. When a
+file there changes, `cyberdeck-build.service` runs `make` in that folder;
+its one rule assembles every `src/*.tal` into `../*.rom`, so the ROM
+appears on the desktop next to `potato.rom`. Assembler output goes to
+`~/deck/build.log`, one level up so writing it does not retrigger the
+watcher; open it from Potato to read errors.
 
-**Automatic (always works).** A systemd path unit watches `~/deck/src`.
-When a `.tal` file changes, `cyberdeck-build.service` runs
-`make -C ~/deck/src`, whose one rule is `%.rom: %.tal` via Drifblim.
-Save in Left, and within about a second the ROM appears next to the source
-and Potato can launch it. Assembler errors go to `src/build.log`, which
-you open in Left. No shell involved.
+Shared includes live in `src/lib/` and are pulled in with `~lib/name.tal`
+(Drifblim resolves `~` from the working directory). `src/lib/atari8.tal`
+is the Atari 8-bit 8x8 font Potato uses, generated from
+`roms/potato/etc/font.icn` by `tools/icn2tal.py`. `src/hello.tal` is a
+minimal starting ROM that uses it.
 
-**From Potato (to verify once the sources are in).** If Potato can launch
-a ROM with a file argument, a `build.tal` wrapper that passes
-`src/foo.tal foo.rom` to Drifblim gives you an explicit "assemble" action.
-I cannot read Potato's source from here, so this is confirmed or dropped
-in the first implementation stage.
+From a laptop, `make` at the repo root builds the same ROMs into `build/`
+and `make disk DISK=path` populates a disk directory without touching a
+user's `src/`, `lxmf/`, `.theme` or `.wallpaper`.
 
-From a laptop, `make roms` does the same with the same makefile, and
-`make install-roms HOST=deck.local` rsyncs the results into the disk.
-
-Done when: editing `src/hello.tal` in Left on the deck yields `hello.rom`
-next to it without leaving Varvara, and a syntax error shows up in
-`src/build.log`.
+Done when: editing `src/hello.tal` on the deck yields `hello.rom` on the
+desktop without leaving Varvara, and a syntax error shows up in
+`build.log`. Verified so far: the repo-side build assembles Potato,
+Noodle and hello, and all three run under uxn2.
 
 ## 5. The Reticulum device (page `d0`)
 
@@ -506,9 +517,8 @@ Not designed in detail yet, but the current plan leaves room for it:
 Each stage is one branch and one review.
 
 1. **Skeleton and kiosk.** Repo layout, top-level makefile, `setup.sh`,
-   systemd units, uxn2 renderer fallback. You add the 100r `.tal` sources.
-   Verify: boots into Potato, auto-assemble works. Confirm or drop the
-   "assemble from Potato" wrapper after reading Potato's source.
+   systemd units, uxn2 renderer fallback. Done in the repo; needs the
+   on-hardware check: boots into Potato, auto-assemble works.
 2. **Device and bridge, headless.** `reticulum.c`, protocol, bridge with
    stub tests, `etc/tests/reticulum.tal`. Verify with `make test` on x86.
 3. **Chat ROM and dev harness.** `chat.tal`, `run-dev.sh`, two decks on a
@@ -522,9 +532,13 @@ Each stage is one branch and one review.
 - **GLES on your Armbian image.** Check `ls /dev/dri` and `uname -r` on
   the Pi. Vendor 6.1 kernels and mainline "edge" kernels differ in
   Panfrost support; the software fallback covers both, at some CPU cost.
-- **Potato's launcher semantics.** Whether it passes arguments, and how it
-  behaves when a launched ROM halts, decides whether the "assemble from
-  Potato" action exists. The automatic path unit does not depend on it.
+- **Left is missing.** Potato's Text app cannot edit, so until Left's
+  source is added to `roms/`, editing `.tal` on the deck means SSH. The
+  build pipeline itself works without it.
+- **Other ROM sources.** Nasu is only present as a binary
+  (`roms/potato/etc/nasu.rom`), and Orca, Dexe and Bifurcan are not in the
+  repo yet. Each is one line in the top-level makefile once its source
+  is committed.
 - **RNode board.** Port detection assumes a USB serial RNode. A BLE RNode
   is supported by RNS (`port = ble://…`) but changes the udev story.
 - **LoRa timing.** At SF8/125 kHz a direct LXMF delivery takes several

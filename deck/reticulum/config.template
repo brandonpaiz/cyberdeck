@@ -1,0 +1,28 @@
+# Reticulum configuration for the cyberdeck, rendered by deck/setup.sh.
+# Edit freely afterwards; setup.sh never overwrites an existing config.
+
+[reticulum]
+  enable_transport = No
+  share_instance = Yes
+  instance_name = default
+
+[logging]
+  loglevel = 4
+
+[interfaces]
+
+  # Finds other Reticulum instances on the local network (your laptop) with
+  # no configuration. Useful for testing before the RNode is connected.
+  [[LAN]]
+    type = AutoInterface
+    enabled = Yes
+
+  [[RNode]]
+    type = RNodeInterface
+    enabled = ${RNODE_ENABLED}
+    port = ${RNODE_PORT}
+    frequency = ${RNODE_FREQUENCY}
+    bandwidth = ${RNODE_BANDWIDTH}
+    txpower = ${RNODE_TXPOWER}
+    spreadingfactor = ${RNODE_SPREADINGFACTOR}
+    codingrate = ${RNODE_CODINGRATE}

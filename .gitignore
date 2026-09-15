@@ -11,3 +11,8 @@ __pycache__/
 
 # dev harness scratch
 dev/disk-*/
+
+# cyberdeck build tree and local config
+build/
+roms/potato/bin/
+deck/deck.env

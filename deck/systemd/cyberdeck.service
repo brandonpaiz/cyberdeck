@@ -1,0 +1,26 @@
+[Unit]
+Description=Cyberdeck Varvara console (uxn2 running Potato on tty1)
+After=systemd-user-sessions.service cyberdeck-bridge.service
+Wants=cyberdeck-bridge.service
+Conflicts=getty@tty1.service
+
+[Service]
+User=deck
+PAMName=login
+WorkingDirectory=/home/deck/deck
+Environment=SDL_VIDEODRIVER=kmsdrm
+Environment=SDL_AUDIODRIVER=alsa
+Environment=CYBERDECK_SOCKET=/run/cyberdeck/bridge.sock
+ExecStart=/usr/local/bin/uxn2 -f potato.rom
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+# A ROM halting is how you get back to Potato.
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
